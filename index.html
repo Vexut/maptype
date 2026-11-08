@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261108e">
+<link rel="stylesheet" href="assets/css/style.css?v=20261108f">
 </head>
 <body>
 <div class="app">
@@ -45,8 +45,7 @@
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" role="group" aria-label="Difficulty">
         <button type="button" data-k="mode" data-v="copy" title="The full answer is shown faintly. Type over it.">copy</button>
-        <button type="button" data-k="mode" data-v="hint" title="Only the first letter is shown.">hint</button>
-        <button type="button" data-k="mode" data-v="recall" title="Nothing is shown. Type it from memory.">recall</button>
+        <button type="button" data-k="mode" data-v="recall" title="Nothing is shown. Type it from memory. Enter gives a hint, Enter again gives up.">recall</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" role="group" aria-label="Stopwatch">
@@ -83,6 +82,7 @@
     <div class="line" id="line" aria-live="off"></div>
     <div class="focusmsg">click here or start typing</div>
     <div class="cap" id="cap"></div>
+    <button class="restart" id="hintBtn" type="button" hidden>hint</button>
     <button class="restart" id="restart" type="button"><kbd>tab</kbd> restart</button>
   </main>
 
@@ -115,11 +115,11 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
-<script src="assets/js/data.js?v=20261108e" defer></script>
-<script src="assets/js/iso.js?v=20261108e" defer></script>
-<script src="assets/js/capitals.js?v=20261108e" defer></script>
-<script src="assets/js/physical.js?v=20261108e" defer></script>
-<script src="assets/js/app.js?v=20261108e" defer></script>
+<script src="assets/js/data.js?v=20261108f" defer></script>
+<script src="assets/js/iso.js?v=20261108f" defer></script>
+<script src="assets/js/capitals.js?v=20261108f" defer></script>
+<script src="assets/js/physical.js?v=20261108f" defer></script>
+<script src="assets/js/app.js?v=20261108f" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>
 </html>
