@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>typemap</title>
+<meta name="description" content="Learn the countries of the world and their capitals by typing them. Free, in English and Finnish.">
+<meta name="theme-color" content="#323437">
+<meta property="og:title" content="typemap">
+<meta property="og:description" content="Learn the countries of the world and their capitals by typing them.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><text y='.9em' font-size='90'>🗺️</text></svg>">
+<link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>typemap</h1>
+    <div class="hr">
+      <button class="ghost" id="theme" type="button" aria-expanded="false" aria-controls="themes">theme</button>
+    </div>
+    <div class="themes" id="themes" hidden></div>
+  </header>
+
+  <div id="opts">
+    <div class="opts">
+      <div class="grp" role="group" aria-label="Difficulty">
+        <button type="button" data-k="mode" data-v="copy" title="The full answer is shown faintly. Type over it.">copy</button>
+        <button type="button" data-k="mode" data-v="hint" title="Only the first letter is shown.">hint</button>
+        <button type="button" data-k="mode" data-v="recall" title="Nothing is shown. Type it from memory.">recall</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <div class="grp" role="group" aria-label="Region">
+        <button type="button" data-k="region" data-v="world">world</button>
+        <button type="button" data-k="region" data-v="europe">europe</button>
+        <button type="button" data-k="region" data-v="asia" title="Asia and the Middle East">asia</button>
+        <button type="button" data-k="region" data-v="africa">africa</button>
+        <button type="button" data-k="region" data-v="americas" title="North and South America">americas</button>
+        <button type="button" data-k="region" data-v="oceania">oceania</button>
+      </div>
+    </div>
+    <div class="opts">
+      <div class="grp" role="group" aria-label="What to type">
+        <span class="lbl">type</span>
+        <button type="button" data-k="ask" data-v="country">country</button>
+        <button type="button" data-k="ask" data-v="capital">capital</button>
+        <button type="button" data-k="ask" data-v="both" title="Country first, then its capital">both</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <div class="grp" role="group" aria-label="Language">
+        <span class="lbl">language</span>
+        <button type="button" data-k="lang" data-v="en">english</button>
+        <button type="button" data-k="lang" data-v="fi">suomi</button>
+        <button type="button" data-k="lang" data-v="both" title="Finnish first, then English">both</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <div class="grp" role="group" aria-label="Zoom">
+        <span class="lbl">zoom</span>
+        <button type="button" data-k="zoom" data-v="wide" title="Zoomed out, small countries get a ring">wide</button>
+        <button type="button" data-k="zoom" data-v="close">close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mapwrap">
+    <svg id="map" role="img" aria-label="World map with one country highlighted"><g id="cam"></g></svg>
+  </div>
+
+  <main class="typing" id="typing">
+    <div class="count" id="count"></div>
+    <div class="line" id="line" aria-live="off"></div>
+    <div class="focusmsg">click here or start typing</div>
+    <div class="cap" id="cap"></div>
+    <button class="restart" id="restart" type="button"><kbd>tab</kbd> restart</button>
+  </main>
+
+  <section class="res" id="res" hidden></section>
+
+  <p class="keys" id="keys"><kbd>enter</kbd> give up and see the answer</p>
+
+  <div class="foot">
+    <span class="by">made by <b>vex</b></span>
+    <button type="button" class="ghost" id="aboutBtn" aria-expanded="false" aria-controls="about">about &amp; privacy</button>
+  </div>
+  <section class="about" id="about" hidden>
+    <h2>About</h2>
+    <p>typemap is a free practice tool for learning the countries of the world, their names and their capitals, in English and Finnish. Made by vex.</p>
+    <h2>Privacy</h2>
+    <p>typemap doesn’t collect any personal data. There are no accounts, ads, analytics or cookies, and the page doesn’t load anything from other websites.</p>
+    <p>Your settings (difficulty, region, what to type, language, zoom and theme) are saved in your own browser’s local storage so they’re still there next time. They never leave your device. You can remove them by clearing this site’s data in your browser.</p>
+    <p>The service hosting this website may keep standard server logs, such as IP addresses, to run and protect the site. Their own privacy policy explains how they handle that.</p>
+    <p id="contactLine" hidden>Questions or corrections: <a id="contact"></a></p>
+    <h2>Map and names</h2>
+    <p>Borders come from Natural Earth (public domain) through the world-atlas project. They’re simplified for learning and don’t take a position on disputed borders or territories.</p>
+    <p>Names and capitals are checked carefully, but mistakes can happen. If your teacher’s material says something different, go with your teacher.</p>
+    <h2>Credits and licences</h2>
+    <p>Map data: Natural Earth (public domain) and world-atlas by Michael Bostock (ISC licence). Font: Roboto Mono by The Roboto Mono Project Authors (SIL Open Font License 1.1).</p>
+    <p>Full licence texts: <a href="THIRD-PARTY-NOTICES.txt">THIRD-PARTY-NOTICES.txt</a></p>
+    <h2>Terms</h2>
+    <p>typemap is free to use and provided as is, without any warranty.</p>
+  </section>
+</div>
+<input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
+
+<script src="assets/js/data.js" defer></script>
+<script src="assets/js/app.js" defer></script>
+<noscript><p style="text-align:center">typemap needs JavaScript to run.</p></noscript>
+</body>
+</html>
