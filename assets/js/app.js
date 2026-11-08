@@ -88,21 +88,24 @@ function setCam(k,cx,cy){
 function flyTo(k,cx,cy,dur,midK){
   if(camRaf){cancelAnimationFrame(camRaf);camRaf=0}
   if(reduceMotion){setCam(k,cx,cy);return}
-  var a=camS, pts=[{k:a.k,cx:a.cx,cy:a.cy,at:0}];
-  if(midK) pts.push({k:midK,cx:(a.cx+cx)/2,cy:(a.cy+cy)/2,at:.42});
-  pts.push({k:k,cx:cx,cy:cy,at:1});
+  var a=camS, lk0=Math.log(a.k), lk1=Math.log(k), lkm=Math.log(midK||Math.min(a.k,k));
   var t0=performance.now();
-  function ease(u){return u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2}
+  function ease(u){u=Math.max(0,Math.min(1,u));return u*u*u*(u*(6*u-15)+10)} /* smootherstep */
+  function lerp(x,y,w){return x+(y-x)*w}
+  /* 1) zoom out where we are  2) glide across while zoomed out  3) zoom in on the target.
+     The three stages overlap a little so the motion never stops dead between them. */
   function frame(now){
-    var u=Math.min(1,(now-t0)/(dur*1000)), e=ease(u), i=1;
-    while(i<pts.length-1&&e>pts[i].at) i++;
-    var p=pts[i-1], q=pts[i], w=(e-p.at)/(q.at-p.at||1);
-    setCam(Math.exp(Math.log(p.k)+(Math.log(q.k)-Math.log(p.k))*w),
-           p.cx+(q.cx-p.cx)*w, p.cy+(q.cy-p.cy)*w);
+    var u=Math.min(1,Math.max(0,(now-t0)/(dur*1000))), lk;
+    if(u<.32) lk=lerp(lk0,lkm,ease(u/.32));
+    else if(u<.62) lk=lkm;
+    else lk=lerp(lkm,lk1,ease((u-.62)/.38));
+    var w=ease((u-.2)/.6);
+    setCam(Math.exp(lk),lerp(a.cx,cx,w),lerp(a.cy,cy,w));
     camRaf=u<1?requestAnimationFrame(frame):0;
   }
   camRaf=requestAnimationFrame(frame);
 }
+
 /* The bounding box stored in the data only covers the biggest piece of a country, so island
    countries (Indonesia, Japan, the Philippines ...) would not fit in the window. Build the
    box from all pieces that lie reasonably close to the main one. Far-away overseas bits
