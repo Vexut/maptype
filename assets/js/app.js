@@ -132,9 +132,9 @@ function fullBox(c){
   return u;
 }
 D.c.forEach(function(c){c.b2=fullBox(c)});
-/* Never zoom in further than this. At 1.6x the window still shows about two thirds of the world
+/* Never zoom in further than this. At 1.9x the window still shows about half of the world
    across, so you can always see which continent the country is on and what is around it. */
-var MAX_K=1.6;
+var MAX_K=1.9;
 var CROWD_OK=24; /* up to this many other countries in view is fine */
 function neighboursInView(c,cx,cy,k){
   var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
@@ -169,9 +169,9 @@ function zoomTo(c){
   /* zoomed-out level for the middle of the trip: wide enough to show both ends */
   var from=camNow();
   var lowest=Math.min(from.k,k);
-  var midK=Math.min(lowest*.75,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));   /* gentle: a quarter out, more only if far */
-  midK=Math.max(1,lowest*.6,midK);
-  flyTo(k,cx,cy,dur,(midK<lowest*.95)?midK:0);
+  var midK=Math.min(lowest*.9,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));   /* very subtle: about a tenth out, a bit more only if far */
+  midK=Math.max(1,lowest*.8,midK);
+  flyTo(k,cx,cy,dur,(midK<lowest*.97)?midK:0);
   camX=cx; camY=cy;
 }
 function applyRegionDim(){
