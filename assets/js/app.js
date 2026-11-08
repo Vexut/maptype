@@ -18,19 +18,28 @@ var ring=document.createElementNS(NS,"circle"); cam.appendChild(ring);
 
 function load(k,def,ok){try{var v=localStorage.getItem("tm-"+k);return ok.indexOf(v)>=0?v:def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem("tm-"+k,v)}catch(e){}}
+/* Languages for the name picker. Country names come from the browser (Intl.DisplayNames);
+   English and Finnish use our own hand-checked names and capitals. */
+var ISO=window.TYPEMAP_ISO||{}, dn={};
+var LANGS=[["en","English"],["fi","Suomi"],["sv","Svenska"],["da","Dansk"],["nb","Norsk"],["de","Deutsch"],["nl","Nederlands"],
+["fr","Français"],["es","Español"],["pt","Português"],["it","Italiano"],["ca","Català"],["pl","Polski"],["cs","Čeština"],["sk","Slovenčina"],
+["hu","Magyar"],["ro","Română"],["et","Eesti"],["lv","Latviešu"],["lt","Lietuvių"],["tr","Türkçe"],["id","Bahasa Indonesia"],
+["ru","Русский"],["uk","Українська"],["bg","Български"],["sr","Српски"],["el","Ελληνικά"]];
 var S={
   mode:load("mode","copy",["copy","hint","recall"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
-  lang:load("lang","en",["en","fi","both"])
+  lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
+  also:load("also","off",["off","on"])
 };
+if(S.lang==="both"){S.lang="fi";S.also="on"} /* old saved setting */
 
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
 var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0;
 
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function fold(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
-function key(s){return fold(s).replace(/[^a-z0-9]/g,"")}
+function key(s){return fold(s).replace(/[^\p{L}\p{N}]/gu,"")}
 function same(a,b){
   a=fold(a); b=fold(b);
   if(a===b) return true;
@@ -39,10 +48,19 @@ function same(a,b){
   return false;
 }
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
-function nameOf(c,l){return l==="fi"?c.fi:c.f}
+function nameOf(c,l){
+  if(l==="en") return c.f;
+  if(l==="fi") return c.fi;
+  var code=ISO[c.f]; if(!code) return c.f;
+  try{
+    var d=dn[l]||(dn[l]=new Intl.DisplayNames([l],{type:"region"}));
+    var n=d.of(code); return n&&n!==code?n:c.f;
+  }catch(e){return c.f}
+}
+function langLabel(l){for(var i=0;i<LANGS.length;i++) if(LANGS[i][0]===l) return LANGS[i][1]; return l}
 function prep(t){
   var c=t.c;
-  if(t.k==="n"){t.t=nameOf(c,t.l); t.al=t.l==="fi"?c.fa:c.a}
+  if(t.k==="n"){t.t=nameOf(c,t.l); t.al=t.l==="fi"?c.fa:t.l==="en"?c.a:[]}
   else{t.t=t.l==="fi"?c.pf:c.p; t.al=c.pa}
 }
 function matches(){
@@ -53,26 +71,54 @@ function matches(){
 
 /* Camera: no zoom setting. How much of the surroundings is shown, and how slowly the
    camera travels, both depend on the country's size on the map. Small countries get a
-   wide view with lots of neighbours and a slow, long flight so you see where they are;
-   big countries get a tight view and a quick one. */
-var camX=W/2, camY=H/2;
+   wide view with lots of neighbours and a slow flight; big countries get a tight view and
+   a quick one. Between two countries the camera first zooms OUT, pans, then zooms in, so
+   you see where the next one is relative to the last. */
+var reduceMotion=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+var camX=W/2, camY=H/2, camAnim=null;
+cam.style.transition="none";
+function camNow(){
+  var m=/matrix\(([^)]+)\)/.exec(getComputedStyle(cam).transform||"");
+  if(!m) return {k:1,x:0,y:0};
+  var v=m[1].split(",").map(Number); return {k:v[0]||1,x:v[4]||0,y:v[5]||0};
+}
+function flyTo(k,x,y,dur,midK){
+  var from=camNow(), end="translate("+x+"px,"+y+"px) scale("+k+")";
+  if(camAnim){camAnim.cancel();camAnim=null}
+  if(reduceMotion||!cam.animate){cam.style.transform=end;return}
+  var f0="translate("+from.x+"px,"+from.y+"px) scale("+from.k+")", frames=[{transform:f0}];
+  if(midK){
+    /* the point in the middle of the screen stays between the old and the new centre */
+    var ox=(W/2-from.x)/from.k, oy=(H/2-from.y)/from.k, nx=(W/2-x)/k, ny=(H/2-y)/k;
+    var mx=(ox+nx)/2, my=(oy+ny)/2;
+    frames.push({transform:"translate("+(W/2-mx*midK)+"px,"+(H/2-my*midK)+"px) scale("+midK+")",offset:.42});
+  }
+  frames.push({transform:end});
+  cam.style.transform=end;
+  camAnim=cam.animate(frames,{duration:dur*1000,easing:"ease-in-out"});
+  camAnim.onfinish=function(){camAnim=null};
+}
 function zoomTo(c){
   if(!c){
-    cam.style.transitionDuration="1s";
-    cam.style.transform="translate(0px,0px) scale(1)";
-    ring.classList.remove("show"); camX=W/2; camY=H/2; return;
+    ring.classList.remove("show"); camX=W/2; camY=H/2;
+    flyTo(1,0,0,1,0); return;
   }
   var b=c.b, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
   var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
   var t=Math.log(size/.005)/Math.log(.25/.005);              /* 0 = tiny ... 1 = huge */
   t=Math.max(0,Math.min(1,t));
-  var f=.07+t*.63;                                           /* share of the view the country fills */
-  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(14,k));
+  var f=.05+.65*Math.pow(t,2.5);                             /* share of the view the country fills */
+  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(10,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
-  var dist=Math.min(1,Math.hypot((cx-camX)/W,(cy-camY)/H)*2);
-  var dur=.8+(1-t)*1.2+dist*.8;                              /* seconds: 0.8 .. 2.8 */
-  cam.style.transitionDuration=dur.toFixed(2)+"s";
-  cam.style.transform="translate("+(W/2-cx*k)+"px,"+(H/2-cy*k)+"px) scale("+k+")";
+  var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
+  var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
+  var dur=1+(1-t)*1.2+dist*.9;                               /* seconds: 1 .. 3.1 */
+  /* zoomed-out level for the middle of the trip: wide enough to show both ends */
+  var from=camNow();
+  var midK=Math.min(from.k,k)*.4;
+  midK=Math.min(midK,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));
+  midK=Math.max(1,midK);
+  flyTo(k,W/2-cx*k,H/2-cy*k,dur,(midK<Math.min(from.k,k)*.9)?midK:0);
   camX=cx; camY=cy;
   ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",(20/k).toFixed(2));
   ring.classList.toggle("show",bw*k<24&&bh*k<24);
@@ -112,7 +158,7 @@ function render(){
   lineEl.innerHTML=h;
   var bits=[];
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
-  if(S.lang==="both") bits.push(cur.l==="fi"?"suomeksi":"in english");
+  if(S.also==="on"&&S.lang!=="en") bits.push(langLabel(cur.l).toLowerCase());
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
   countEl.innerHTML=(Math.min(ptr+1,queue.length))+"/"+queue.length+lab;
   if(reveal){capEl.className="cap err";capEl.textContent="it\u2019s "+cur.t+" \u2013 type it to learn it"}
@@ -121,7 +167,7 @@ function render(){
 }
 
 function makeTasks(list){
-  var out=[], langs=S.lang==="both"?["fi","en"]:[S.lang];
+  var out=[], langs=(S.also==="on"&&S.lang!=="en")?[S.lang,"en"]:[S.lang];
   function add(c,k){
     var seen={};
     langs.forEach(function(l){
@@ -194,7 +240,9 @@ inp.addEventListener("keydown",function(e){
   }
 });
 document.addEventListener("keydown",function(e){
-  if(document.activeElement!==inp&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+  var ae=document.activeElement;
+  if(ae&&ae.tagName==="INPUT"&&ae!==inp) return; /* typing in the language search */
+  if(ae!==inp&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
     if(e.key==="Tab"){e.preventDefault();startRegion();return}
     if(e.key.length===1) inp.focus();
   }
@@ -206,6 +254,8 @@ typing.addEventListener("click",focusInput);
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});
 
 function syncButtons(){
+  el("alsoGrp").hidden=S.lang==="en";
+  el("langCur").textContent=langLabel(S.lang);
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
   });
@@ -216,6 +266,32 @@ el("opts").addEventListener("click",function(e){
   syncButtons(); if(k==="region") applyRegionDim();
   startRegion();
 });
+
+/* language picker: button + searchable list */
+var langBtn=el("langBtn"), langPanel=el("langPanel"), langSearch=el("langSearch"), langList=el("langList");
+function fillLangs(q){
+  q=fold(q||"").trim(); var h="";
+  LANGS.forEach(function(l){
+    if(q&&fold(l[1]).indexOf(q)<0&&l[0].indexOf(q)<0) return;
+    h+='<button type="button" role="option" data-lang="'+l[0]+'" aria-selected="'+(l[0]===S.lang)+'">'+esc(l[1])+'</button>';
+  });
+  langList.innerHTML=h||'<span class="none">no match</span>';
+}
+function toggleLangs(open){
+  langPanel.hidden=!open; langBtn.setAttribute("aria-expanded",String(open));
+  if(open){langSearch.value=""; fillLangs(""); langSearch.focus()}
+}
+function pickLang(l){
+  toggleLangs(false); S.lang=l; save("lang",l); syncButtons(); startRegion();
+}
+langBtn.addEventListener("click",function(e){e.stopPropagation();toggleLangs(langPanel.hidden)});
+langSearch.addEventListener("input",function(){fillLangs(langSearch.value)});
+langSearch.addEventListener("keydown",function(e){
+  if(e.key==="Enter"){e.preventDefault();var f=langList.querySelector("[data-lang]");if(f) pickLang(f.dataset.lang)}
+  if(e.key==="Escape"){e.stopPropagation();toggleLangs(false);focusInput()}
+});
+langList.addEventListener("click",function(e){var b=e.target.closest("[data-lang]"); if(b) pickLang(b.dataset.lang)});
+document.addEventListener("click",function(e){if(!langPanel.hidden&&!e.target.closest(".langpick")) toggleLangs(false)});
 
 /* themes */
 var THEMES=[

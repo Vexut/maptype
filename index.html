@@ -48,11 +48,18 @@
         <button type="button" data-k="ask" data-v="both" title="Country first, then its capital">both</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
-      <div class="grp" role="group" aria-label="Language">
+      <div class="grp langpick" role="group" aria-label="Language">
         <span class="lbl">language</span>
-        <button type="button" data-k="lang" data-v="en">english</button>
-        <button type="button" data-k="lang" data-v="fi">suomi</button>
-        <button type="button" data-k="lang" data-v="both" title="Finnish first, then English">both</button>
+        <button type="button" id="langBtn" class="langbtn" aria-haspopup="listbox" aria-expanded="false"><span id="langCur">English</span> <i aria-hidden="true">&#9662;</i></button>
+        <div class="langpanel" id="langPanel" hidden>
+          <input type="text" id="langSearch" placeholder="search language" autocomplete="off" spellcheck="false" aria-label="Search language">
+          <div id="langList" role="listbox"></div>
+        </div>
+      </div>
+      <div class="grp" id="alsoGrp" role="group" aria-label="Also ask in English">
+        <span class="lbl">+ english</span>
+        <button type="button" data-k="also" data-v="off">off</button>
+        <button type="button" data-k="also" data-v="on" title="Ask each one in your language, then in English">on</button>
       </div>
     </div>
   </div>
@@ -79,13 +86,14 @@
   </div>
   <section class="about" id="about" hidden>
     <h2>About</h2>
-    <p>maptype is a free practice tool for learning the countries of the world, their names and their capitals, in English and Finnish. Built by Vexut.</p>
+    <p>maptype is a free practice tool for learning the countries of the world, their names and their capitals, in English, Finnish and many other languages. Built by Vexut.</p>
     <h2>Privacy</h2>
     <p>maptype doesn’t collect any personal data. There are no accounts, ads, analytics or cookies, and the page doesn’t load anything from other websites.</p>
     <p>Your settings (difficulty, region, what to type, language and theme) are saved in your own browser’s local storage so they’re still there next time. They never leave your device. You can remove them by clearing this site’s data in your browser.</p>
     <p>The service hosting this website may keep standard server logs, such as IP addresses, to run and protect the site. Their own privacy policy explains how they handle that.</p>
     <p id="contactLine" hidden>Questions or corrections: <a id="contact"></a></p>
     <h2>Map and names</h2>
+    <p>Country names in languages other than English and Finnish are translated by your browser, so they can differ a little between browsers. Capitals are only translated into Finnish; in other languages they are asked in English.</p>
     <p>Borders come from Natural Earth (public domain) through the world-atlas project. They’re simplified for learning and don’t take a position on disputed borders or territories.</p>
     <p>Names and capitals are checked carefully, but mistakes can happen. If your teacher’s material says something different, go with your teacher.</p>
     <h2>Credits and licences</h2>
@@ -98,6 +106,7 @@
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
 <script src="assets/js/data.js" defer></script>
+<script src="assets/js/iso.js" defer></script>
 <script src="assets/js/app.js" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>

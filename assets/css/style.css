@@ -57,7 +57,7 @@ button:focus-visible{outline:2px solid var(--main);outline-offset:2px}
 
 .mapwrap{margin-top:16px;background:var(--panel);border-radius:12px;overflow:hidden}
 #map{display:block;width:100%;height:auto;max-height:46vh}
-#cam{transform-origin:0 0;transition:transform 1s cubic-bezier(.3,.7,.2,1)}
+#cam{transform-origin:0 0}
 #cam path{fill:var(--land);stroke:var(--line);stroke-width:.7;vector-effect:non-scaling-stroke;
   stroke-linejoin:round;transition:fill .3s,opacity .3s}
 #cam path.out{opacity:.4}
@@ -114,3 +114,15 @@ kbd{font:inherit;font-size:.75rem;background:var(--panel);color:var(--text);padd
 .about summary{cursor:pointer}
 .about pre{white-space:pre-wrap;font-size:.72rem;max-height:320px;overflow:auto;background:var(--panel);color:var(--text);padding:12px;border-radius:8px}
 [hidden]{display:none!important}
+
+.langpick{position:relative}
+.grp .langbtn{color:var(--main)}
+.langbtn i{font-style:normal;font-size:.7rem;opacity:.7}
+.langpanel{position:absolute;left:0;top:100%;margin-top:6px;z-index:20;width:240px;max-width:86vw;background:var(--panel);border-radius:10px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.35);text-align:left}
+.langpanel input{width:100%;font:inherit;font-size:.85rem;color:var(--text);background:var(--bg);border:2px solid transparent;border-radius:6px;padding:.5rem .6rem;outline:none}
+.langpanel input:focus{border-color:var(--main)}
+#langList{max-height:260px;overflow-y:auto;margin-top:6px;display:flex;flex-direction:column}
+#langList button{text-align:left;color:var(--text);font-size:.85rem;padding:.45rem .6rem;border-radius:6px}
+#langList button:hover{background:var(--bg)}
+#langList button[aria-selected="true"]{color:var(--main)}
+#langList .none{color:var(--sub);font-size:.8rem;padding:.45rem .6rem}
