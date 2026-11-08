@@ -29,10 +29,9 @@ var S={
   mode:load("mode","copy",["copy","hint","recall"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
-  lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
-  also:load("also","off",["off","on"])
+  lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both"))
 };
-if(S.lang==="both"){S.lang="fi";S.also="on"} /* old saved setting */
+if(S.lang==="both") S.lang="fi"; /* old saved setting (finnish + english) */
 
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
 var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0;
@@ -103,6 +102,33 @@ function flyTo(k,cx,cy,dur,midK){
   }
   camRaf=requestAnimationFrame(frame);
 }
+/* The bounding box stored in the data only covers the biggest piece of a country, so island
+   countries (Indonesia, Japan, the Philippines ...) would not fit in the window. Build the
+   box from all pieces that lie reasonably close to the main one. Far-away overseas bits
+   (Alaska-style exclaves, wrap-around pieces at the map edge) are ignored. */
+function fullBox(c){
+  var parts=c.d.split("M").slice(1).map(function(sp){
+    var n=sp.match(/-?\d+\.?\d*/g).map(Number), b=[1e9,1e9,-1e9,-1e9];
+    for(var i=0;i+1<n.length;i+=2){
+      if(n[i]<b[0])b[0]=n[i]; if(n[i]>b[2])b[2]=n[i];
+      if(n[i+1]<b[1])b[1]=n[i+1]; if(n[i+1]>b[3])b[3]=n[i+1];
+    }
+    return b;
+  });
+  var u=c.b.slice(), gap=W*.12, grew=true, used={};
+  while(grew){
+    grew=false;
+    parts.forEach(function(p,i){
+      if(used[i]) return;
+      if(p[0]<u[2]+gap&&p[2]>u[0]-gap&&p[1]<u[3]+gap&&p[3]>u[1]-gap){
+        used[i]=1; grew=true;
+        u=[Math.min(u[0],p[0]),Math.min(u[1],p[1]),Math.max(u[2],p[2]),Math.max(u[3],p[3])];
+      }
+    });
+  }
+  return u;
+}
+D.c.forEach(function(c){c.b2=fullBox(c)});
 var CROWD_OK=24; /* up to this many other countries in view is fine */
 function neighboursInView(c,cx,cy,k){
   var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
@@ -118,18 +144,19 @@ function zoomTo(c){
     ring.classList.remove("show"); camX=W/2; camY=H/2;
     flyTo(1,W/2,H/2,1,0); return;
   }
-  var b=c.b, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
+  var b=c.b2, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
   var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
   var t=Math.log(size/.005)/Math.log(.25/.005);              /* 0 = tiny ... 1 = huge */
   t=Math.max(0,Math.min(1,t));
-  var f=.05+.65*Math.pow(t,2.5);                             /* share of the view the country fills */
-  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(10,k));
+  var f=.04+.5*Math.pow(t,2.2);                             /* share of the view the country fills */
+  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(8,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
      border lines when zoomed in. The more countries that would be in view, the further we
      pull back (by at most about a third). */
   var crowd=neighboursInView(c,cx,cy,k);
   k=Math.max(1.3,k*Math.max(.65,Math.min(1,CROWD_OK/Math.max(crowd,1))));
+  k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
   var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
   var dur=1+(1-t)*1.2+dist*.9;                               /* seconds: 1 .. 3.1 */
@@ -178,7 +205,6 @@ function render(){
   lineEl.innerHTML=h;
   var bits=[];
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
-  if(S.also==="on"&&S.lang!=="en") bits.push(langLabel(cur.l).toLowerCase());
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
   countEl.innerHTML=(Math.min(ptr+1,queue.length))+"/"+queue.length+lab;
   if(reveal){capEl.className="cap err";capEl.textContent="it\u2019s "+cur.t+" \u2013 type it to learn it"}
@@ -187,7 +213,7 @@ function render(){
 }
 
 function makeTasks(list){
-  var out=[], langs=(S.also==="on"&&S.lang!=="en")?[S.lang,"en"]:[S.lang];
+  var out=[], langs=[S.lang];
   function add(c,k){
     var seen={};
     langs.forEach(function(l){
@@ -274,7 +300,6 @@ typing.addEventListener("click",focusInput);
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});
 
 function syncButtons(){
-  el("alsoGrp").hidden=S.lang==="en";
   el("langCur").textContent=langLabel(S.lang);
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
