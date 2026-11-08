@@ -193,7 +193,14 @@ function captionFor(){
   return "type the "+w+" from memory \u00b7 enter to give up";
 }
 function timed(){return S.game==="on"}
-function clock(ms){var t=Math.floor(ms/100)/10, m=Math.floor(t/60), r=t-m*60;return m+":"+(r<10?"0":"")+r.toFixed(1)}
+function clock(ms){
+  /* plain words: seconds, then minutes, then hours when needed */
+  ms=Math.max(0,Number(ms)||0);
+  var tot=ms/1000, h=Math.floor(tot/3600), m=Math.floor((tot%3600)/60), sec=tot%60;
+  if(h) return h+" h "+m+" min "+Math.floor(sec)+" s";
+  if(m) return m+" min "+Math.floor(sec)+" s";
+  return sec.toFixed(1)+" s";
+}
 var lastLab="";
 function counterHtml(lab){
   if(lab!==undefined) lastLab=lab;
@@ -269,12 +276,12 @@ function miss(){
   if(!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
   buf=""; inp.value=""; render();
 }
-function fmt(ms){var s=Math.round(ms/1000),m=Math.floor(s/60);return m+":"+(s%60<10?"0":"")+(s%60)}
+function fmt(ms){return clock(ms)}
 function finish(){
   stopTimer();
   finished=true; cur=null; highlight(null); zoomTo(null);
   var acc=total?Math.round(100*good/total):100;
-  var elapsed=t0?performance.now()-t0:0, time=t0?fmt(elapsed):"0:00", best=0, isBest=false;
+  var elapsed=t0?performance.now()-t0:0, time=t0?fmt(elapsed):"0.0 s", best=0, isBest=false;
   if(timed()&&t0){
     var prev=getBest(); best=prev;
     if(!prev||elapsed<prev){setBest(Math.round(elapsed)); isBest=!!prev; best=Math.round(elapsed)}
