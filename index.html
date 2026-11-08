@@ -11,14 +11,15 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261108f">
+<link rel="stylesheet" href="assets/css/style.css?v=20261108h">
 </head>
 <body>
 <div class="app">
   <header>
     <h1>maptype</h1>
     <div class="hr">
-      <button class="ghost" id="optsBtn" type="button" aria-expanded="false" aria-controls="opts">settings</button>
+      <button class="ghost" id="optsBtn" type="button" aria-expanded="false" aria-controls="opts">options</button>
+      <button class="ghost" id="settingsBtn" type="button" aria-haspopup="dialog">settings</button>
       <button class="ghost" id="theme" type="button" aria-expanded="false" aria-controls="themes">theme</button>
     </div>
     <div class="themes" id="themes" hidden></div>
@@ -49,14 +50,11 @@
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" role="group" aria-label="Stopwatch">
-        <span class="lbl">+ stopwatch</span>
-        <button type="button" data-k="game" data-v="off">off</button>
-        <button type="button" data-k="game" data-v="on" title="Shows a running clock from your first letter and your total time at the end">on</button>
+        <button type="button" id="swBtn" aria-pressed="false" title="Show a running clock from your first letter and your total time at the end">stopwatch</button>
       </div>
     </div>
     <div class="opts">
       <div class="grp" id="askGrp" role="group" aria-label="What to type">
-        <span class="lbl">type</span>
         <button type="button" data-k="ask" data-v="country">country</button>
         <button type="button" data-k="ask" data-v="capital">capital</button>
         <button type="button" data-k="ask" data-v="both" title="Country first, then its capital">both</button>
@@ -113,13 +111,19 @@
     <p>maptype is free to use and provided as is, without any warranty.</p>
   </section>
 </div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="sheetin">
+    <div class="sheethead"><h2>Settings</h2><button type="button" class="ghost" id="sheetClose">close</button></div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
-<script src="assets/js/data.js?v=20261108f" defer></script>
-<script src="assets/js/iso.js?v=20261108f" defer></script>
-<script src="assets/js/capitals.js?v=20261108f" defer></script>
-<script src="assets/js/physical.js?v=20261108f" defer></script>
-<script src="assets/js/app.js?v=20261108f" defer></script>
+<script src="assets/js/data.js?v=20261108h" defer></script>
+<script src="assets/js/iso.js?v=20261108h" defer></script>
+<script src="assets/js/capitals.js?v=20261108h" defer></script>
+<script src="assets/js/physical.js?v=20261108h" defer></script>
+<script src="assets/js/app.js?v=20261108h" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>
 </html>

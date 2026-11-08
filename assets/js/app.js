@@ -24,6 +24,10 @@ var PHYS=(window.TYPEMAP_PHYS||[]).map(function(f){
 });
 var TOPICS={countries:null,rivers:"river",seas:"sea",mountains:"mountain",deserts:"desert"};   /* any combination can be on */
 var CAPS=window.TYPEMAP_CAPS||{};
+/* items switched off in the settings sheet (countries "c:Name", others "river:Name" ...) */
+var OFF=(function(){try{return new Set(JSON.parse(localStorage.getItem("tm-off")||"[]"))}catch(e){return new Set()}})();
+function idOf(c){return (c.k||"c")+":"+c.f}
+function included(c){return !OFF.has(idOf(c))}
 
 function load(k,def,ok){try{var v=localStorage.getItem("tm-"+k);return ok.indexOf(v)>=0?v:def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem("tm-"+k,v)}catch(e){}}
@@ -43,6 +47,10 @@ var S={
     try{var v=(localStorage.getItem("tm-topics")||"").split(",").filter(function(t){return t in TOPICS});if(v.length) return v}catch(e){}
     return ["countries"];
   })(),
+  limit:load("limit","all",["all","10","20","30","50","100"]),   /* questions per round */
+  order:load("order","random",["random","az"]),
+  retry:load("retry","on",["on","off"]),                          /* ask missed ones again at the end */
+  speed:load("speed","normal",["slow","normal","fast","instant"]), /* camera travel */
   game:load("game","off",["off","on"])   /* stopwatch on / off */
 };
 if(S.mode==="hint") S.mode="recall";   /* the old hint mode now lives inside recall */
@@ -109,7 +117,7 @@ function setCam(k,cx,cy){
    of it), so lines and borders stay sharp the whole way, also when zoomed in mid-flight. */
 function flyTo(k,cx,cy,dur,midK){
   if(camRaf){cancelAnimationFrame(camRaf);camRaf=0}
-  if(reduceMotion){setCam(k,cx,cy);return}
+  if(reduceMotion||S.speed==="instant"){setCam(k,cx,cy);return}
   var a=camS, lk0=Math.log(a.k), lk1=Math.log(k), lkm=Math.log(midK||Math.min(a.k,k));
   var t0=performance.now();
   function ease(u){u=Math.max(0,Math.min(1,u));return u*u*u*(u*(6*u-15)+10)} /* smootherstep */
@@ -188,7 +196,7 @@ function zoomTo(c){
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
   var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
-  var dur=1+(1-t)*1.2+dist*.9;                               /* seconds: 1 .. 3.1 */
+  var dur=(1+(1-t)*1.2+dist*.9)*({slow:1.7,normal:1,fast:.6,instant:0}[S.speed]||1);   /* seconds, normally 1 .. 3.1 */
   /* zoomed-out level for the middle of the trip: wide enough to show both ends */
   var from=camNow();
   var lowest=Math.min(from.k,k);
@@ -276,11 +284,15 @@ function makeTasks(list){
       var kk=key(t.t); if(seen[kk]) return; seen[kk]=1; out.push(t);
     });
   }
-  shuffle(list.slice()).forEach(function(c){
+  var ordered=S.order==="az"
+    ? list.slice().sort(function(a,b){return nameOf(a,S.lang).localeCompare(nameOf(b,S.lang),S.lang)})
+    : shuffle(list.slice());
+  ordered.forEach(function(c){
     var ask=c.k?"country":S.ask;   /* rivers, seas ... are always asked by name */
     if(ask!=="capital") add(c,"n");
     if(ask!=="country") add(c,"p");
   });
+  if(S.limit!=="all") out=out.slice(0,parseInt(S.limit,10));
   return out;
 }
 function next(){
@@ -295,18 +307,26 @@ function start(tasks){
   resEl.hidden=true; typing.hidden=false;
   next(); focusInput();
 }
+function nothingSelected(){
+  stopTimer(); cur=null; finished=true; highlight(null); zoomTo(null);
+  resEl.innerHTML='<h2>nothing selected</h2><p class="best">Everything in the chosen topics is switched off.</p>'+
+    '<div class="acts"><button type="button" id="openSet2">open settings</button></div>';
+  resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
+  el("openSet2").onclick=function(){openSheet()};
+}
 function startRegion(){
   applyRegionDim();
   var list=[];
   if(hasTopic("countries")) list=D.regions[S.region].map(function(i){return D.c[i]});
   var kinds=S.topics.map(function(t){return TOPICS[t]}).filter(Boolean);
-  list=list.concat(PHYS.filter(function(f){return kinds.indexOf(f.k)>=0}));
+  list=list.concat(PHYS.filter(function(f){return kinds.indexOf(f.k)>=0})).filter(included);
+  if(!list.length){ nothingSelected(); return; }
   start(makeTasks(list));
 }
 function success(){ptr++;next()}
 function miss(){
   reveal=true; missed.add(cur);
-  if(!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
+  if(S.retry==="on"&&!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
   buf=""; inp.value=""; render();
 }
 function fmt(ms){return clock(ms)}
@@ -360,6 +380,7 @@ inp.addEventListener("keydown",function(e){
 });
 document.addEventListener("keydown",function(e){
   var ae=document.activeElement;
+  if(!el("sheet").hidden) return;                  /* settings sheet is open */
   if(ae&&ae.tagName==="INPUT"&&ae!==inp) return; /* typing in the language search */
   if(ae!==inp&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
     if(e.key==="Tab"){e.preventDefault();startRegion();return}
@@ -379,6 +400,7 @@ el("restart").addEventListener("click",function(e){e.stopPropagation();startRegi
 
 function syncButtons(){
   var geo=hasTopic("countries");
+  el("swBtn").setAttribute("aria-pressed",String(S.game==="on"));
   document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langLabel(S.lang);
@@ -387,6 +409,9 @@ function syncButtons(){
   });
 }
 el("opts").addEventListener("click",function(e){
+  if(e.target.closest("#swBtn")){                  /* stopwatch: tick on / off */
+    S.game=S.game==="on"?"off":"on"; save("game",S.game); syncButtons(); startRegion(); return;
+  }
   var tb=e.target.closest("[data-topic]");
   if(tb){                                          /* switch a topic on or off; at least one stays on */
     var t=tb.dataset.topic, i=S.topics.indexOf(t);
@@ -437,6 +462,106 @@ optsEl.addEventListener("click",function(e){
   if(e.target.closest("[data-k]")&&window.matchMedia("(max-width:640px)").matches){
     optsEl.classList.remove("open"); optsBtn.setAttribute("aria-expanded","false");
   }
+});
+
+/* settings sheet: pick exactly which items are asked, plus the more niche options */
+var sheet=el("sheet"), sheetBody=el("sheetBody"), sheetChanged=false;
+var TOPIC_TITLES=[["countries","Countries",null],["rivers","Rivers","river"],["seas","Seas & oceans","sea"],["mountains","Mountains","mountain"],["deserts","Deserts","desert"]];
+function itemsOf(topic){
+  var kind=TOPICS[topic];
+  var arr=kind?PHYS.filter(function(f){return f.k===kind}):D.c.slice();
+  return arr.sort(function(a,b){return a.f.localeCompare(b.f)});
+}
+function optRow(label,key,vals,hint){
+  return '<div class="srow"><div class="slabel">'+label+(hint?'<small>'+hint+'</small>':'')+'</div><div class="grp">'+
+    vals.map(function(v){return '<button type="button" data-set="'+key+'" data-val="'+v[0]+'" aria-pressed="'+(S[key]===v[0])+'">'+v[1]+'</button>'}).join("")+'</div></div>';
+}
+function buildSheet(){
+  var h='<input type="text" id="itemSearch" class="isearch" placeholder="search all lists" autocomplete="off" spellcheck="false" aria-label="Search the lists">';
+  h+='<h3>What to include</h3><p class="snote">Tick exactly what you want to be asked. A topic only counts when it is switched on.</p>';
+  TOPIC_TITLES.forEach(function(t){
+    var items=itemsOf(t[0]);
+    h+='<details class="sec" data-topic-sec="'+t[0]+'"><summary><span class="stitle">'+t[1]+'</span><span class="cnt" data-cnt="'+t[0]+'"></span></summary>'+
+      '<div class="stools"><label class="inc"><input type="checkbox" data-topicsw="'+t[0]+'"'+(hasTopic(t[0])?' checked':'')+'> include this topic</label>'+
+      '<button type="button" data-all="'+t[0]+'">select all</button><button type="button" data-none="'+t[0]+'">select none</button>';
+    if(t[0]==="countries"){
+      h+='<span class="only">only:</span>'+Object.keys(D.regions).filter(function(r){return r!=="world"}).map(function(r){
+        return '<button type="button" data-only="'+r+'">'+r+'</button>'}).join("");
+    }
+    h+='</div><div class="items">'+items.map(function(c){
+      var id=idOf(c);
+      return '<label class="it" data-n="'+esc(fold(c.f))+'"><input type="checkbox" data-id="'+esc(id)+'"'+(OFF.has(id)?'':' checked')+'> <span>'+esc(c.f)+'</span></label>';
+    }).join("")+'</div></details>';
+  });
+  h+='<h3>Round</h3>'+
+    optRow("Questions per round","limit",[["all","all"],["10","10"],["20","20"],["30","30"],["50","50"],["100","100"]])+
+    optRow("Order","order",[["random","random"],["az","A to Z"]])+
+    optRow("Missed ones","retry",[["on","ask again"],["off","skip"]],"ask them again at the end of the round")+
+    '<h3>Camera</h3>'+
+    optRow("Travel speed","speed",[["slow","slow"],["normal","normal"],["fast","fast"],["instant","instant"]])+
+    '<h3>Data</h3><div class="srow"><div class="slabel">Reset everything<small>settings, selections and best times</small></div><button type="button" class="danger" id="resetAll">reset</button></div>';
+  sheetBody.innerHTML=h; refreshCounts();
+}
+function refreshCounts(){
+  TOPIC_TITLES.forEach(function(t){
+    var items=itemsOf(t[0]), on=items.filter(included).length, c=sheetBody.querySelector('[data-cnt="'+t[0]+'"]');
+    if(c) c.textContent=on+" / "+items.length+(hasTopic(t[0])?"":" \u00b7 off");
+  });
+}
+function openSheet(){
+  sheetChanged=false; buildSheet(); sheet.hidden=false; document.body.classList.add("noscroll");
+  el("sheetClose").focus();
+}
+function closeSheet(){
+  if(sheet.hidden) return;
+  sheet.hidden=true; document.body.classList.remove("noscroll");
+  if(sheetChanged){syncButtons(); applyRegionDim(); startRegion()}
+  focusInput();
+}
+el("settingsBtn").addEventListener("click",function(e){e.stopPropagation();openSheet()});
+el("sheetClose").addEventListener("click",closeSheet);
+sheet.addEventListener("click",function(e){if(e.target===sheet) closeSheet()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!sheet.hidden){e.preventDefault();closeSheet()}});
+function setItems(topic,fn){
+  itemsOf(topic).forEach(function(c){ if(fn(c)) OFF.delete(idOf(c)); else OFF.add(idOf(c)); });
+  save("off",JSON.stringify(Array.from(OFF))); sheetChanged=true;
+  sheetBody.querySelectorAll('[data-topic-sec="'+topic+'"] [data-id]').forEach(function(cb){cb.checked=!OFF.has(cb.dataset.id)});
+  refreshCounts();
+}
+sheetBody.addEventListener("change",function(e){
+  var t=e.target;
+  if(t.dataset.id){
+    if(t.checked) OFF.delete(t.dataset.id); else OFF.add(t.dataset.id);
+    save("off",JSON.stringify(Array.from(OFF))); sheetChanged=true; refreshCounts();
+  }else if(t.dataset.topicsw){
+    var tp=t.dataset.topicsw, i=S.topics.indexOf(tp);
+    if(t.checked&&i<0) S.topics.push(tp);
+    else if(!t.checked&&i>=0){ if(S.topics.length>1) S.topics.splice(i,1); else {t.checked=true; return} }
+    save("topics",S.topics.join(",")); sheetChanged=true; refreshCounts();
+  }
+});
+sheetBody.addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.all) setItems(b.dataset.all,function(){return true});
+  else if(b.dataset.none) setItems(b.dataset.none,function(){return false});
+  else if(b.dataset.only){
+    var set=new Set(D.regions[b.dataset.only]);
+    setItems("countries",function(c){return set.has(c.i)});
+  }else if(b.dataset.set){
+    S[b.dataset.set]=b.dataset.val; save(b.dataset.set,b.dataset.val); sheetChanged=true;
+    b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});
+  }else if(b.id==="resetAll"){
+    if(window.confirm("Reset all settings, selections and best times?")){
+      try{Object.keys(localStorage).filter(function(k){return k.indexOf("tm-")===0}).forEach(function(k){localStorage.removeItem(k)})}catch(err){}
+      location.reload();
+    }
+  }
+});
+sheetBody.addEventListener("input",function(e){
+  if(e.target.id!=="itemSearch") return;
+  var q=fold(e.target.value).trim();
+  sheetBody.querySelectorAll(".it").forEach(function(l){l.hidden=!!q&&l.dataset.n.indexOf(q)<0});
+  if(q) sheetBody.querySelectorAll("details.sec").forEach(function(d){d.open=!!d.querySelector(".it:not([hidden])")});
 });
 
 /* themes */
