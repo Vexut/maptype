@@ -28,10 +28,12 @@ var S={
   mode:load("mode","copy",["copy","hint","recall"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
-  lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both"))
+  lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
+  game:load("game","off",["off","30","60","120"])   /* off = practice, otherwise seconds on the clock */
 };
 if(S.lang==="both") S.lang="fi"; /* old saved setting (finnish + english) */
 
+var pool=[], solved=0, timer=0, timeLeft=0;
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
 var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0;
 
@@ -189,6 +191,26 @@ function captionFor(){
   if(S.mode==="hint") return "first letter given \u00b7 enter to give up";
   return "type the "+w+" from memory \u00b7 enter to give up";
 }
+function timed(){return S.game!=="off"}
+function clock(sec){sec=Math.max(0,Math.ceil(sec));return Math.floor(sec/60)+":"+(sec%60<10?"0":"")+(sec%60)}
+var lastLab="";
+function counterHtml(lab){
+  if(lab!==undefined) lastLab=lab;
+  if(!timed()) return (Math.min(ptr+1,queue.length))+"/"+queue.length+lastLab;
+  return '<span class="'+(timeLeft<=10&&t0?"low":"")+'">'+clock(timeLeft)+"</span> \u00b7 "+solved+" solved"+lastLab;
+}
+function stopTimer(){if(timer){clearInterval(timer);timer=0}}
+function startTimer(){
+  stopTimer(); var end=performance.now()+parseInt(S.game,10)*1000;
+  timer=setInterval(function(){
+    timeLeft=(end-performance.now())/1000;
+    if(timeLeft<=0){timeLeft=0;stopTimer();finish();return}
+    countEl.innerHTML=counterHtml();
+  },200);
+}
+function bestKey(){return "tm-best-"+S.game+"-"+S.region+"-"+S.ask+"-"+S.lang}
+function getBest(){try{return parseInt(localStorage.getItem(bestKey()),10)||0}catch(e){return 0}}
+function setBest(n){try{localStorage.setItem(bestKey(),String(n))}catch(e){}}
 function render(){
   if(!cur) return;
   var t=cur.t, n=Math.max(t.length,buf.length), h="", showFull=(S.mode==="copy"||reveal);
@@ -209,7 +231,7 @@ function render(){
   var bits=[];
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
-  countEl.innerHTML=(Math.min(ptr+1,queue.length))+"/"+queue.length+lab;
+  countEl.innerHTML=counterHtml(lab);
   if(reveal){capEl.className="cap err";capEl.textContent="it\u2019s "+cur.t+" \u2013 type it to learn it"}
   else{capEl.className="cap";capEl.textContent=captionFor()}
   keysEl.hidden=(S.mode==="copy"||reveal);
@@ -231,33 +253,42 @@ function makeTasks(list){
   return out;
 }
 function next(){
-  if(ptr>=queue.length){finish();return}
+  if(ptr>=queue.length){
+    if(timed()&&pool.length){queue=queue.concat(shuffle(pool.map(function(t){return {c:t.c,k:t.k,l:t.l}})))}
+    else{finish();return}
+  }
   cur=queue[ptr]; prep(cur); buf=""; inp.value=""; reveal=false;
   highlight(cur.c); zoomTo(cur.c); render();
 }
 function start(tasks){
+  stopTimer(); pool=tasks.slice(); solved=0; timeLeft=timed()?parseInt(S.game,10):0;
   queue=tasks; ptr=0; missed=new Set(); requeued=new Set();
   good=0; total=0; t0=0; finished=false;
   resEl.hidden=true; typing.hidden=false;
   next(); focusInput();
 }
 function startRegion(){start(makeTasks(D.regions[S.region].map(function(i){return D.c[i]})))}
-function success(){ptr++;next()}
+function success(){solved++;ptr++;next()}
 function miss(){
-  reveal=true; missed.add(cur);
+  missed.add(cur);
+  if(timed()){ptr++;next();return}   /* on the clock: skip straight to the next one */
+  reveal=true;
   if(!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
   buf=""; inp.value=""; render();
 }
 function fmt(ms){var s=Math.round(ms/1000),m=Math.floor(s/60);return m+":"+(s%60<10?"0":"")+(s%60)}
 function finish(){
+  stopTimer();
   finished=true; cur=null; highlight(null); zoomTo(null);
   var acc=total?Math.round(100*good/total):100;
-  var time=t0?fmt(performance.now()-t0):"0:00";
+  var time=t0?fmt(performance.now()-t0):"0:00", best=0, isBest=false;
+  if(timed()){time=fmt(parseInt(S.game,10)*1000); best=getBest(); if(solved>best){setBest(solved);isBest=solved>0;best=solved}}
   var list=Array.from(missed);
   var h='<div class="stats">'+
     '<div class="stat"><div class="l">accuracy</div><div class="val">'+acc+'%</div></div>'+
-    '<div class="stat"><div class="l">answers</div><div class="val">'+(queue.length-requeued.size)+'</div></div>'+
+    '<div class="stat"><div class="l">'+(timed()?"score":"answers")+'</div><div class="val">'+(timed()?solved:(queue.length-requeued.size))+'</div></div>'+
     '<div class="stat"><div class="l">time</div><div class="val">'+time+'</div></div></div>';
+  if(timed()) h+='<p class="best">'+(isBest?"new best!":"best: "+best)+" \u00b7 "+S.game+" seconds</p>";
   if(list.length){
     h+='<h2>missed</h2><div class="miss">'+list.map(function(t){
       return "<span>"+esc(t.t)+(t.k==="p"?" ("+esc(nameOf(t.c,t.l))+")":"")+"</span>"}).join("")+"</div>";
@@ -273,7 +304,7 @@ inp.addEventListener("input",function(){
   if(!cur||finished){inp.value="";return}
   var v=inp.value.replace(/[\r\n]/g,"");
   if(v.length>buf.length){
-    if(!t0) t0=performance.now();
+    if(!t0){t0=performance.now(); if(timed()) startTimer()}
     for(var i=buf.length;i<v.length;i++){total++; if(i<cur.t.length&&same(v[i],cur.t[i])) good++}
   }
   buf=v;
@@ -285,7 +316,7 @@ inp.addEventListener("keydown",function(e){
   if(e.key==="Tab"){e.preventDefault();startRegion();return}
   if(e.key==="Enter"){
     e.preventDefault();
-    if(cur&&!reveal&&S.mode!=="copy") miss();
+    if(cur&&!reveal&&(S.mode!=="copy"||timed())) miss();
   }
 });
 document.addEventListener("keydown",function(e){

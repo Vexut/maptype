@@ -124,3 +124,6 @@ kbd{font:inherit;font-size:.75rem;background:var(--panel);color:var(--text);padd
 #langList button:hover{background:var(--bg)}
 #langList button[aria-selected="true"]{color:var(--main)}
 #langList .none{color:var(--sub);font-size:.8rem;padding:.45rem .6rem}
+
+.low{color:var(--err)}
+.best{color:var(--sub);font-size:.85rem;margin:18px 0 0}
