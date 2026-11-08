@@ -22,8 +22,7 @@ var S={
   mode:load("mode","copy",["copy","hint","recall"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
-  lang:load("lang","en",["en","fi","both"]),
-  zoom:load("zoom","wide",["wide","close"])
+  lang:load("lang","en",["en","fi","both"])
 };
 
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
@@ -52,13 +51,29 @@ function matches(){
   return cur.al.some(function(x){return key(x)===k});
 }
 
-var ZP={wide:{f:.3,min:1.3,max:7},close:{f:.5,min:1.6,max:26}};
+/* Camera: no zoom setting. How much of the surroundings is shown, and how slowly the
+   camera travels, both depend on the country's size on the map. Small countries get a
+   wide view with lots of neighbours and a slow, long flight so you see where they are;
+   big countries get a tight view and a quick one. */
+var camX=W/2, camY=H/2;
 function zoomTo(c){
-  if(!c){cam.style.transform="translate(0px,0px) scale(1)";ring.classList.remove("show");return}
-  var z=ZP[S.zoom], b=c.b, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
-  var k=Math.min(W*z.f/bw,H*z.f/bh); k=Math.max(z.min,Math.min(z.max,k));
+  if(!c){
+    cam.style.transitionDuration="1s";
+    cam.style.transform="translate(0px,0px) scale(1)";
+    ring.classList.remove("show"); camX=W/2; camY=H/2; return;
+  }
+  var b=c.b, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
+  var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
+  var t=Math.log(size/.005)/Math.log(.25/.005);              /* 0 = tiny ... 1 = huge */
+  t=Math.max(0,Math.min(1,t));
+  var f=.07+t*.63;                                           /* share of the view the country fills */
+  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(14,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
+  var dist=Math.min(1,Math.hypot((cx-camX)/W,(cy-camY)/H)*2);
+  var dur=.8+(1-t)*1.2+dist*.8;                              /* seconds: 0.8 .. 2.8 */
+  cam.style.transitionDuration=dur.toFixed(2)+"s";
   cam.style.transform="translate("+(W/2-cx*k)+"px,"+(H/2-cy*k)+"px) scale("+k+")";
+  camX=cx; camY=cy;
   ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",(20/k).toFixed(2));
   ring.classList.toggle("show",bw*k<24&&bh*k<24);
 }
