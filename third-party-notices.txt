@@ -113,3 +113,11 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+=== Wikidata ===
+Capital names in other languages are labels from Wikidata (CC0 1.0, public domain dedication).
+https://www.wikidata.org/
+
+=== Natural Earth (rivers, seas, mountains, deserts) ===
+Rivers, marine areas and geographic regions come from Natural Earth (public domain), simplified for learning.
+https://www.naturalearthdata.com/

@@ -14,11 +14,21 @@ var paths=D.c.map(function(c,i){
   var p=document.createElementNS(NS,"path");
   p.setAttribute("d",c.d); cam.appendChild(p); c.i=i; return p;
 });
+/* rivers, seas, mountains and deserts: hidden until one of them is the current question.
+   Seas sit under the countries, everything else on top. */
+var PHYS=(window.TYPEMAP_PHYS||[]).map(function(f){
+  var p=document.createElementNS(NS,"path");
+  p.setAttribute("d",f.d); p.setAttribute("class","ph "+f.k);
+  if(f.k==="sea") cam.insertBefore(p,paths[0]); else cam.appendChild(p);
+  f.el=p; f.b2=f.b; return f;
+});
+var TOPICS={countries:null,rivers:"river",seas:"sea",mountains:"mountain",deserts:"desert",nature:"all"};
+var CAPS=window.TYPEMAP_CAPS||{};
 
 function load(k,def,ok){try{var v=localStorage.getItem("tm-"+k);return ok.indexOf(v)>=0?v:def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem("tm-"+k,v)}catch(e){}}
 /* Languages for the name picker. Country names come from the browser (Intl.DisplayNames);
-   English and Finnish use our own hand-checked names and capitals. */
+   English and a few other languages use our own hand-checked names. */
 var ISO=window.TYPEMAP_ISO||{}, dn={};
 var LANGS=[["en","English"],["fi","Suomi"],["sv","Svenska"],["da","Dansk"],["nb","Norsk"],["de","Deutsch"],["nl","Nederlands"],
 ["fr","Français"],["es","Español"],["pt","Português"],["it","Italiano"],["ca","Català"],["pl","Polski"],["cs","Čeština"],["sk","Slovenčina"],
@@ -29,9 +39,10 @@ var S={
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
+  topic:load("topic","countries",Object.keys(TOPICS)),
   game:load("game","off",["off","on"])   /* stopwatch on / off */
 };
-if(S.lang==="both") S.lang="fi"; /* old saved setting (finnish + english) */
+if(S.lang==="both") S.lang="fi"; /* old saved setting */
 
 var timer=0;
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
@@ -50,6 +61,7 @@ function same(a,b){
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 function nameOf(c,l){
   if(l==="en") return c.f;
+  if(c.k) return l==="fi"?c.fi:((c.n&&c.n[l])||c.f);   /* rivers, seas, mountains, deserts */
   if(l==="fi") return c.fi;
   var code=ISO[c.f]; if(!code) return c.f;
   try{
@@ -60,8 +72,13 @@ function nameOf(c,l){
 function langLabel(l){for(var i=0;i<LANGS.length;i++) if(LANGS[i][0]===l) return LANGS[i][1]; return l}
 function prep(t){
   var c=t.c;
-  if(t.k==="n"){t.t=nameOf(c,t.l); t.al=t.l==="fi"?c.fa:t.l==="en"?c.a:[]}
-  else{t.t=t.l==="fi"?c.pf:c.p; t.al=c.pa}
+  if(t.k==="n"){
+    t.t=nameOf(c,t.l);
+    t.al=t.l==="fi"?c.fa:t.l==="en"?c.a:(c.k?[c.f].concat(c.a):[])
+  }else{
+    var cp=t.l==="fi"?c.pf:((CAPS[t.l]&&CAPS[t.l][ISO[c.f]])||c.p);
+    t.t=cp; t.al=c.pa.concat(cp!==c.p?[c.p]:[]);          /* the English name is accepted too */
+  }
 }
 function matches(){
   var k=key(buf); if(!k) return false;
@@ -134,9 +151,9 @@ function fullBox(c){
   return u;
 }
 D.c.forEach(function(c){c.b2=fullBox(c)});
-/* Never zoom in further than this. At 1.9x the window still shows about half of the world
+/* Never zoom in further than this. At 2.4x the window still shows about 40% of the world
    across, so you can always see which continent the country is on and what is around it. */
-var MAX_K=1.9;
+var MAX_K=2.4;
 var CROWD_OK=24; /* up to this many other countries in view is fine */
 function neighboursInView(c,cx,cy,k){
   var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
@@ -177,12 +194,13 @@ function zoomTo(c){
   camX=cx; camY=cy;
 }
 function applyRegionDim(){
-  var set=new Set(D.regions[S.region]);
-  paths.forEach(function(p,i){p.classList.toggle("out",S.region!=="world"&&!set.has(i))});
+  var set=new Set(D.regions[S.region]), dim=S.topic==="countries"&&S.region!=="world";
+  paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i))});
 }
 function highlight(c){
   paths.forEach(function(p){p.classList.remove("on")});
-  if(c){var p=paths[c.i]; p.classList.add("on"); cam.appendChild(p);}
+  PHYS.forEach(function(f){f.el.classList.remove("on")});
+  if(c){var p=c.el||paths[c.i]; p.classList.add("on"); if(c.k!=="sea") cam.appendChild(p);}
 }
 
 function captionFor(){
@@ -252,8 +270,9 @@ function makeTasks(list){
     });
   }
   shuffle(list.slice()).forEach(function(c){
-    if(S.ask!=="capital") add(c,"n");
-    if(S.ask!=="country") add(c,"p");
+    var ask=S.topic==="countries"?S.ask:"country";
+    if(ask!=="capital") add(c,"n");
+    if(ask!=="country") add(c,"p");
   });
   return out;
 }
@@ -269,7 +288,13 @@ function start(tasks){
   resEl.hidden=true; typing.hidden=false;
   next(); focusInput();
 }
-function startRegion(){start(makeTasks(D.regions[S.region].map(function(i){return D.c[i]})))}
+function startRegion(){
+  applyRegionDim();
+  var kind=TOPICS[S.topic], list;
+  if(!kind) list=D.regions[S.region].map(function(i){return D.c[i]});
+  else list=PHYS.filter(function(f){return kind==="all"||f.k===kind});
+  start(makeTasks(list));
+}
 function success(){ptr++;next()}
 function miss(){
   reveal=true; missed.add(cur);
@@ -337,6 +362,8 @@ typing.addEventListener("click",focusInput);
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});
 
 function syncButtons(){
+  var geo=S.topic==="countries";
+  el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langLabel(S.lang);
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
@@ -345,7 +372,7 @@ function syncButtons(){
 el("opts").addEventListener("click",function(e){
   var b=e.target.closest("[data-k]"); if(!b) return;
   var k=b.dataset.k; S[k]=b.dataset.v; save(k,S[k]);
-  syncButtons(); if(k==="region") applyRegionDim();
+  syncButtons();
   startRegion();
 });
 
@@ -374,6 +401,19 @@ langSearch.addEventListener("keydown",function(e){
 });
 langList.addEventListener("click",function(e){var b=e.target.closest("[data-lang]"); if(b) pickLang(b.dataset.lang)});
 document.addEventListener("click",function(e){if(!langPanel.hidden&&!e.target.closest(".langpick")) toggleLangs(false)});
+
+/* settings: always visible on wide screens, folded behind a button on phones */
+var optsEl=el("opts"), optsBtn=el("optsBtn");
+optsBtn.addEventListener("click",function(e){
+  e.stopPropagation(); var open=!optsEl.classList.contains("open");
+  optsEl.classList.toggle("open",open); optsBtn.setAttribute("aria-expanded",String(open));
+});
+optsEl.addEventListener("click",function(e){
+  /* on a phone, picking a topic / difficulty closes the panel so the game is in view */
+  if(e.target.closest("[data-k]")&&window.matchMedia("(max-width:640px)").matches){
+    optsEl.classList.remove("open"); optsBtn.setAttribute("aria-expanded","false");
+  }
+});
 
 /* themes */
 var THEMES=[

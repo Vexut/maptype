@@ -127,3 +127,38 @@ kbd{font:inherit;font-size:.75rem;background:var(--panel);color:var(--text);padd
 
 .best{color:var(--sub);font-size:.85rem;margin:18px 0 0}
 .clk{font-size:1.5em;margin-right:.2em}
+
+/* rivers, seas, mountains, deserts */
+#cam path.ph{display:none;fill:none;stroke:none}
+#cam path.ph.on{display:inline;stroke:var(--main);stroke-width:1.2;fill-opacity:.5;fill:var(--main)}
+#cam path.ph.river.on{fill:none;stroke-width:2.6;stroke-linecap:round}
+#cam path.ph.sea.on{fill-opacity:.32}
+#cam path.ph.mountain.on,#cam path.ph.desert.on{fill-opacity:.6}
+.grp[hidden]+.sep{display:none}
+#optsBtn{display:none}
+
+/* phones */
+@media (max-width:640px){
+  .app{padding:12px 12px calc(28px + env(safe-area-inset-bottom,0px))}
+  header{margin-bottom:10px}
+  h1{font-size:1.3rem}
+  #optsBtn{display:inline-block}
+  #opts{display:none}
+  #opts.open{display:block}
+  .opts{padding:6px 6px;gap:2px 4px}
+  .grp button,.ghost{min-height:40px;padding:.5rem .65rem}
+  .sep{display:none}
+  .grp{width:100%;justify-content:center;padding:2px 0}
+  .lbl{width:100%;text-align:center;padding:2px 0 0}
+  .langpanel{left:50%;transform:translateX(-50%);width:min(300px,92vw)}
+  #langList{max-height:46vh}
+  .mapwrap{margin-top:10px;border-radius:10px}
+  #map{max-height:34vh}
+  .typing{margin-top:16px}
+  .keys{display:none}
+  .foot{margin-top:20px}
+  .themes{width:100%}
+}
+@media (hover:none){
+  button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+}

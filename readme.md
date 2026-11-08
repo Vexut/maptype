@@ -1,6 +1,6 @@
 # maptype
 
-Learn the countries of the world and their capitals by typing them. Built by Vexut.
+Learn the geography of the world by typing it: countries and capitals, rivers, seas, mountains and deserts, in many languages. Built by Vexut.
 
 ## Files
 
@@ -13,6 +13,9 @@ third-party-notices.txt    licences for the map data and font
 assets/css/style.css       all styling and colour themes
 assets/js/app.js           how the game works
 assets/js/data.js          map shapes, country names and capitals (generated)
+assets/js/physical.js      rivers, seas, mountains and deserts (generated)
+assets/js/capitals.js      capital names in other languages (generated)
+assets/js/iso.js           country codes used for name translation
 assets/fonts/              Roboto Mono font files
 ```
 
