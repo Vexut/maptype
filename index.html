@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261108d">
+<link rel="stylesheet" href="assets/css/style.css?v=20261108e">
 </head>
 <body>
 <div class="app">
@@ -26,13 +26,12 @@
 
   <div id="opts">
     <div class="opts">
-      <div class="grp" role="group" aria-label="Topic">
-        <button type="button" data-k="topic" data-v="countries">countries</button>
-        <button type="button" data-k="topic" data-v="rivers">rivers</button>
-        <button type="button" data-k="topic" data-v="seas" title="Seas, gulfs and oceans">seas</button>
-        <button type="button" data-k="topic" data-v="mountains" title="Mountain ranges">mountains</button>
-        <button type="button" data-k="topic" data-v="deserts">deserts</button>
-        <button type="button" data-k="topic" data-v="nature" title="Rivers, seas, mountains and deserts mixed">nature</button>
+      <div class="grp" role="group" aria-label="Topics: switch any combination on">
+        <button type="button" data-topic="countries" title="Switch any topics on or off. At least one stays on.">countries</button>
+        <button type="button" data-topic="rivers">rivers</button>
+        <button type="button" data-topic="seas" title="Seas, gulfs and oceans">seas</button>
+        <button type="button" data-topic="mountains" title="Mountain ranges">mountains</button>
+        <button type="button" data-topic="deserts">deserts</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" id="regionGrp" role="group" aria-label="Region">
@@ -116,11 +115,11 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
-<script src="assets/js/data.js?v=20261108d" defer></script>
-<script src="assets/js/iso.js?v=20261108d" defer></script>
-<script src="assets/js/capitals.js?v=20261108d" defer></script>
-<script src="assets/js/physical.js?v=20261108d" defer></script>
-<script src="assets/js/app.js?v=20261108d" defer></script>
+<script src="assets/js/data.js?v=20261108e" defer></script>
+<script src="assets/js/iso.js?v=20261108e" defer></script>
+<script src="assets/js/capitals.js?v=20261108e" defer></script>
+<script src="assets/js/physical.js?v=20261108e" defer></script>
+<script src="assets/js/app.js?v=20261108e" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>
 </html>

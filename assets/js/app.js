@@ -22,7 +22,7 @@ var PHYS=(window.TYPEMAP_PHYS||[]).map(function(f){
   if(f.k==="sea") cam.insertBefore(p,paths[0]); else cam.appendChild(p);
   f.el=p; f.b2=f.b; return f;
 });
-var TOPICS={countries:null,rivers:"river",seas:"sea",mountains:"mountain",deserts:"desert",nature:"all"};
+var TOPICS={countries:null,rivers:"river",seas:"sea",mountains:"mountain",deserts:"desert"};   /* any combination can be on */
 var CAPS=window.TYPEMAP_CAPS||{};
 
 function load(k,def,ok){try{var v=localStorage.getItem("tm-"+k);return ok.indexOf(v)>=0?v:def}catch(e){return def}}
@@ -39,7 +39,10 @@ var S={
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
-  topic:load("topic","countries",Object.keys(TOPICS)),
+  topics:(function(){
+    try{var v=(localStorage.getItem("tm-topics")||"").split(",").filter(function(t){return t in TOPICS});if(v.length) return v}catch(e){}
+    return ["countries"];
+  })(),
   game:load("game","off",["off","on"])   /* stopwatch on / off */
 };
 if(S.lang==="both") S.lang="fi"; /* old saved setting */
@@ -193,8 +196,9 @@ function zoomTo(c){
   flyTo(k,cx,cy,dur,(midK<lowest*.97)?midK:0);
   camX=cx; camY=cy;
 }
+function hasTopic(t){return S.topics.indexOf(t)>=0}
 function applyRegionDim(){
-  var set=new Set(D.regions[S.region]), dim=S.topic==="countries"&&S.region!=="world";
+  var set=new Set(D.regions[S.region]), dim=hasTopic("countries")&&S.region!=="world";
   paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i))});
 }
 function highlight(c){
@@ -270,7 +274,7 @@ function makeTasks(list){
     });
   }
   shuffle(list.slice()).forEach(function(c){
-    var ask=S.topic==="countries"?S.ask:"country";
+    var ask=c.k?"country":S.ask;   /* rivers, seas ... are always asked by name */
     if(ask!=="capital") add(c,"n");
     if(ask!=="country") add(c,"p");
   });
@@ -290,9 +294,10 @@ function start(tasks){
 }
 function startRegion(){
   applyRegionDim();
-  var kind=TOPICS[S.topic], list;
-  if(!kind) list=D.regions[S.region].map(function(i){return D.c[i]});
-  else list=PHYS.filter(function(f){return kind==="all"||f.k===kind});
+  var list=[];
+  if(hasTopic("countries")) list=D.regions[S.region].map(function(i){return D.c[i]});
+  var kinds=S.topics.map(function(t){return TOPICS[t]}).filter(Boolean);
+  list=list.concat(PHYS.filter(function(f){return kinds.indexOf(f.k)>=0}));
   start(makeTasks(list));
 }
 function success(){ptr++;next()}
@@ -362,7 +367,8 @@ typing.addEventListener("click",focusInput);
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});
 
 function syncButtons(){
-  var geo=S.topic==="countries";
+  var geo=hasTopic("countries");
+  document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langLabel(S.lang);
   document.querySelectorAll("[data-k]").forEach(function(b){
@@ -370,6 +376,13 @@ function syncButtons(){
   });
 }
 el("opts").addEventListener("click",function(e){
+  var tb=e.target.closest("[data-topic]");
+  if(tb){                                          /* switch a topic on or off; at least one stays on */
+    var t=tb.dataset.topic, i=S.topics.indexOf(t);
+    if(i>=0){ if(S.topics.length>1) S.topics.splice(i,1); else return; }
+    else S.topics.push(t);
+    save("topics",S.topics.join(",")); syncButtons(); startRegion(); return;
+  }
   var b=e.target.closest("[data-k]"); if(!b) return;
   var k=b.dataset.k; S[k]=b.dataset.v; save(k,S[k]);
   syncButtons();
