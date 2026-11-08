@@ -29,7 +29,8 @@ var S={
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
-  game:load("game","off",["off","30","60","120"])   /* off = practice, otherwise seconds on the clock */
+  game:load("game","off",["off","30","60","120"]),   /* off = no clock, otherwise seconds on the clock */
+  len:load("len","60",["30","60","120"])   /* last timer length used */
 };
 if(S.lang==="both") S.lang="fi"; /* old saved setting (finnish + english) */
 
@@ -334,14 +335,22 @@ typing.addEventListener("click",focusInput);
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});
 
 function syncButtons(){
+  var on=S.game!=="off", tb=el("timerBtn");
+  tb.setAttribute("aria-pressed",String(on)); tb.innerHTML=(on?"&#9745;":"&#9744;")+" timer";
+  el("lenGrp").hidden=!on;
   el("langCur").textContent=langLabel(S.lang);
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
   });
 }
 el("opts").addEventListener("click",function(e){
+  if(e.target.closest("#timerBtn")){            /* tick / untick the timer */
+    S.game=S.game==="off"?S.len:"off"; save("game",S.game);
+    syncButtons(); startRegion(); return;
+  }
   var b=e.target.closest("[data-k]"); if(!b) return;
   var k=b.dataset.k; S[k]=b.dataset.v; save(k,S[k]);
+  if(k==="game"){S.len=S.game; save("len",S.len)}
   syncButtons(); if(k==="region") applyRegionDim();
   startRegion();
 });

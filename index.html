@@ -29,6 +29,12 @@
         <button type="button" data-k="mode" data-v="copy" title="The full answer is shown faintly. Type over it.">copy</button>
         <button type="button" data-k="mode" data-v="hint" title="Only the first letter is shown.">hint</button>
         <button type="button" data-k="mode" data-v="recall" title="Nothing is shown. Type it from memory.">recall</button>
+        <button type="button" id="timerBtn" aria-pressed="false" title="Tick to play against the clock: as many as you can before time runs out. Enter skips.">&#9744; timer</button>
+        <span id="lenGrp" hidden>
+          <button type="button" data-k="game" data-v="30">30s</button>
+          <button type="button" data-k="game" data-v="60">60s</button>
+          <button type="button" data-k="game" data-v="120">2 min</button>
+        </span>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" role="group" aria-label="Region">
@@ -46,14 +52,6 @@
         <button type="button" data-k="ask" data-v="country">country</button>
         <button type="button" data-k="ask" data-v="capital">capital</button>
         <button type="button" data-k="ask" data-v="both" title="Country first, then its capital">both</button>
-      </div>
-      <span class="sep" aria-hidden="true"></span>
-      <div class="grp" role="group" aria-label="Game">
-        <span class="lbl">game</span>
-        <button type="button" data-k="game" data-v="off" title="No clock. Go through the list at your own pace.">practice</button>
-        <button type="button" data-k="game" data-v="30" title="As many as you can in 30 seconds. Enter skips.">30s</button>
-        <button type="button" data-k="game" data-v="60" title="As many as you can in 60 seconds. Enter skips.">60s</button>
-        <button type="button" data-k="game" data-v="120" title="As many as you can in 2 minutes. Enter skips.">2 min</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp langpick" role="group" aria-label="Language">
