@@ -55,8 +55,9 @@ button:focus-visible{outline:2px solid var(--main);outline-offset:2px}
 .lbl{color:var(--sub);font-size:.72rem;opacity:.7;padding:0 2px 0 8px}
 .sep{width:4px;height:20px;border-radius:2px;background:var(--bg);margin:0 6px}
 
-.mapwrap{margin-top:16px;background:var(--panel);border-radius:12px;overflow:hidden}
-#map{display:block;width:100%;height:auto;max-height:46vh}
+.mapwrap{position:relative;margin-top:16px;background:var(--panel);border-radius:12px;overflow:hidden}
+#map{display:block;width:100%;height:auto;max-height:46vh;touch-action:none;cursor:grab}
+#map.grab{cursor:grabbing}
 #cam{transform-origin:0 0}
 #cam path{fill:var(--land);stroke:var(--line);stroke-width:.7;vector-effect:non-scaling-stroke;
   stroke-linejoin:round;transition:fill .3s,opacity .3s}
@@ -153,7 +154,7 @@ kbd{font:inherit;font-size:.75rem;background:var(--panel);color:var(--text);padd
   .langpanel{left:50%;transform:translateX(-50%);width:min(300px,92vw)}
   #langList{max-height:46vh}
   .mapwrap{margin-top:10px;border-radius:10px}
-  #map{max-height:34vh}
+  #map{height:42vh;height:42dvh;max-height:none}
   .typing{margin-top:16px}
   .keys{display:none}
   .foot{margin-top:20px}
@@ -200,3 +201,8 @@ details.sec summary::-webkit-details-marker{display:none}
   .srow{flex-direction:column;align-items:flex-start}
   .srow .grp{width:100%;justify-content:flex-start}
 }
+
+.mapctl{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:36px;height:36px;border-radius:8px;background:var(--bg);color:var(--text);font-size:1.15rem;line-height:1;opacity:.85;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.mapctl button:hover{opacity:1;color:var(--main)}
+@media (max-width:640px){.mapctl button{width:40px;height:40px}}

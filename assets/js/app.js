@@ -104,6 +104,15 @@ function matches(){
    a quick one. Between two countries the camera first zooms OUT, pans, then zooms in, so
    you see where the next one is relative to the last. */
 var reduceMotion=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* On a phone the map box is taller than the world is wide, so the map is cropped at the sides
+   (slice) instead of shrunk. viewScale() is how much of the map width is visible (1 = all). */
+function viewScale(){
+  var narrow=window.matchMedia&&matchMedia("(max-width:640px)").matches;
+  svg.setAttribute("preserveAspectRatio",narrow?"xMidYMid slice":"xMidYMid meet");
+  if(!narrow) return 1;
+  var r=svg.getBoundingClientRect(); if(!r.width||!r.height) return 1;
+  return Math.max(.3,Math.min(1,H*(r.width/r.height)/W));
+}
 var camX=W/2, camY=H/2, camRaf=0;
 var camS={k:1,cx:W/2,cy:H/2};               /* what the camera shows right now */
 cam.style.transition="none";
@@ -179,7 +188,7 @@ function neighboursInView(c,cx,cy,k){
 function zoomTo(c){
   if(!c){
     camX=W/2; camY=H/2;
-    flyTo(1,W/2,H/2,1,0); return;
+    flyTo(viewScale(),W/2,H/2,1,0); return;
   }
   var b=c.b2, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
   var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
@@ -194,14 +203,15 @@ function zoomTo(c){
   var crowd=neighboursInView(c,cx,cy,k);
   k=Math.max(1,k*Math.max(.7,Math.min(1,CROWD_OK/Math.max(crowd,1))));
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
+  var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
   var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
   var dur=(1+(1-t)*1.2+dist*.9)*({slow:1.7,normal:1,fast:.6,instant:0}[S.speed]||1);   /* seconds, normally 1 .. 3.1 */
   /* zoomed-out level for the middle of the trip: wide enough to show both ends */
   var from=camNow();
   var lowest=Math.min(from.k,k);
-  var midK=Math.min(lowest*.9,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));   /* very subtle: about a tenth out, a bit more only if far */
-  midK=Math.max(1,lowest*.8,midK);
+  var midK=Math.min(lowest*.9,sc*W/(dx*1.4+W*.25),sc*H/(dy*1.4+H*.3));   /* very subtle: about a tenth out, a bit more only if far */
+  midK=Math.max(sc,lowest*.8,midK);
   flyTo(k,cx,cy,dur,(midK<lowest*.97)?midK:0);
   camX=cx; camY=cy;
 }
@@ -557,6 +567,63 @@ sheetBody.addEventListener("input",function(e){
   var q=fold(e.target.value).trim();
   sheetBody.querySelectorAll(".it").forEach(function(l){l.hidden=!!q&&l.dataset.n.indexOf(q)<0});
   if(q) sheetBody.querySelectorAll("details.sec").forEach(function(d){d.open=!!d.querySelector(".it:not([hidden])")});
+});
+
+/* manual zoom and pan: mouse wheel, drag, pinch, and the + / - / reset buttons.
+   The next question puts the camera back on its own. */
+(function(){
+  var pts={}, last=null;
+  function toView(clientX,clientY){
+    var m=svg.getScreenCTM(); if(!m) return {x:W/2,y:H/2};
+    var p=svg.createSVGPoint(); p.x=clientX; p.y=clientY; p=p.matrixTransform(m.inverse());
+    return {x:p.x,y:p.y};
+  }
+  function manual(){ if(camRaf){cancelAnimationFrame(camRaf);camRaf=0} }
+  function zoomAt(f,vx,vy){
+    manual();
+    var a=camS, kMin=viewScale()*.85, k=Math.max(kMin,Math.min(40,a.k*f));
+    var lx=a.cx+(vx-W/2)/a.k, ly=a.cy+(vy-H/2)/a.k;          /* map point under the cursor stays put */
+    setCam(k,Math.max(0,Math.min(W,lx-(vx-W/2)/k)),Math.max(0,Math.min(H,ly-(vy-H/2)/k)));
+  }
+  function panBy(dvx,dvy){
+    manual(); var a=camS;
+    setCam(a.k,Math.max(0,Math.min(W,a.cx-dvx/a.k)),Math.max(0,Math.min(H,a.cy-dvy/a.k)));
+  }
+  svg.addEventListener("wheel",function(e){
+    e.preventDefault(); var v=toView(e.clientX,e.clientY);
+    zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1?.05:.0015)),v.x,v.y);
+  },{passive:false});
+  svg.addEventListener("pointerdown",function(e){
+    try{svg.setPointerCapture(e.pointerId)}catch(err){}
+    pts[e.pointerId]={x:e.clientX,y:e.clientY}; last=null; svg.classList.add("grab");
+  });
+  svg.addEventListener("pointermove",function(e){
+    if(!pts[e.pointerId]) return;
+    var ids=Object.keys(pts), prev=pts[e.pointerId];
+    if(ids.length===1){
+      var a=toView(prev.x,prev.y), b=toView(e.clientX,e.clientY); panBy(b.x-a.x,b.y-a.y);
+    }else if(ids.length===2){
+      var o=pts[ids[0]===String(e.pointerId)?ids[1]:ids[0]];
+      var d0=Math.hypot(prev.x-o.x,prev.y-o.y), d1=Math.hypot(e.clientX-o.x,e.clientY-o.y);
+      var mid=toView((e.clientX+o.x)/2,(e.clientY+o.y)/2), mp=toView((prev.x+o.x)/2,(prev.y+o.y)/2);
+      if(d0>0&&d1>0) zoomAt(d1/d0,mid.x,mid.y);
+      panBy(mid.x-mp.x,mid.y-mp.y);
+    }
+    pts[e.pointerId]={x:e.clientX,y:e.clientY};
+  });
+  function up(e){delete pts[e.pointerId]; if(!Object.keys(pts).length) svg.classList.remove("grab")}
+  svg.addEventListener("pointerup",up); svg.addEventListener("pointercancel",up);
+  svg.addEventListener("dblclick",function(e){var v=toView(e.clientX,e.clientY);zoomAt(2,v.x,v.y)});
+  el("zin").addEventListener("click",function(e){e.stopPropagation();zoomAt(1.5,W/2,H/2)});
+  el("zout").addEventListener("click",function(e){e.stopPropagation();zoomAt(1/1.5,W/2,H/2)});
+  el("zreset").addEventListener("click",function(e){e.stopPropagation();zoomTo(cur?cur.c:null);focusInput()});
+})();
+
+/* phone rotated / window resized: frame the current question again */
+var resizeT=0;
+window.addEventListener("resize",function(){
+  clearTimeout(resizeT);
+  resizeT=setTimeout(function(){ var sp=S.speed; S.speed="instant"; zoomTo(cur?cur.c:null); S.speed=sp },200);
 });
 
 /* themes */
