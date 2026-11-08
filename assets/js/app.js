@@ -80,7 +80,8 @@ cam.style.transition="none";
 function camNow(){return camS}
 function setCam(k,cx,cy){
   camS={k:k,cx:cx,cy:cy};
-  cam.style.transform="translate("+(W/2-cx*k)+"px,"+(H/2-cy*k)+"px) scale("+k+")";
+  /* an SVG attribute, not CSS: the browser can never turn it into a stretched bitmap */
+  cam.setAttribute("transform","translate("+(W/2-cx*k)+" "+(H/2-cy*k)+") scale("+k+")");
 }
 /* The camera is moved by redrawing the vector map every frame (not by animating a bitmap
    of it), so lines and borders stay sharp the whole way, also when zoomed in mid-flight. */
