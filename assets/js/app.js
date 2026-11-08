@@ -14,7 +14,6 @@ var paths=D.c.map(function(c,i){
   var p=document.createElementNS(NS,"path");
   p.setAttribute("d",c.d); cam.appendChild(p); c.i=i; return p;
 });
-var ring=document.createElementNS(NS,"circle"); cam.appendChild(ring);
 
 function load(k,def,ok){try{var v=localStorage.getItem("tm-"+k);return ok.indexOf(v)>=0?v:def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem("tm-"+k,v)}catch(e){}}
@@ -148,7 +147,7 @@ function neighboursInView(c,cx,cy,k){
 }
 function zoomTo(c){
   if(!c){
-    ring.classList.remove("show"); camX=W/2; camY=H/2;
+    camX=W/2; camY=H/2;
     flyTo(1,W/2,H/2,1,0); return;
   }
   var b=c.b2, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
@@ -169,13 +168,11 @@ function zoomTo(c){
   var dur=1+(1-t)*1.2+dist*.9;                               /* seconds: 1 .. 3.1 */
   /* zoomed-out level for the middle of the trip: wide enough to show both ends */
   var from=camNow();
-  var midK=Math.min(from.k,k)*.4;
-  midK=Math.min(midK,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));
-  midK=Math.max(1,midK);
-  flyTo(k,cx,cy,dur,(midK<Math.min(from.k,k)*.9)?midK:0);
+  var lowest=Math.min(from.k,k);
+  var midK=Math.min(lowest*.75,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));   /* gentle: a quarter out, more only if far */
+  midK=Math.max(1,lowest*.6,midK);
+  flyTo(k,cx,cy,dur,(midK<lowest*.95)?midK:0);
   camX=cx; camY=cy;
-  ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",(20/k).toFixed(2));
-  ring.classList.toggle("show",bw*k<24&&bh*k<24);
 }
 function applyRegionDim(){
   var set=new Set(D.regions[S.region]);
@@ -184,7 +181,6 @@ function applyRegionDim(){
 function highlight(c){
   paths.forEach(function(p){p.classList.remove("on")});
   if(c){var p=paths[c.i]; p.classList.add("on"); cam.appendChild(p);}
-  cam.appendChild(ring);
 }
 
 function captionFor(){
