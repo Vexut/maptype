@@ -642,7 +642,7 @@ window.addEventListener("resize",function(){
 
 /* themes */
 var THEMES=[
-["dark","dark","#323437","#2c2e31","#e2b714","#646669","#d1d0c5","#ca4754"],
+["dark","dark","#2e3238","#272b30","#e6b43c","#686c73","#d5d3c8","#cf4d5d"],
 ["light","light","#eceef1","#e0e3e8","#9a6b00","#80858e","#2a2e35","#c23b4a"],
 ["midnight","midnight","#0b1020","#121a33","#5eead4","#4a5580","#cfd8ff","#ff6b81"],
 ["frost","frost","#2e3440","#3b4252","#88c0d0","#616e88","#d8dee9","#bf616a"],
