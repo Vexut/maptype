@@ -75,28 +75,33 @@ function matches(){
    a quick one. Between two countries the camera first zooms OUT, pans, then zooms in, so
    you see where the next one is relative to the last. */
 var reduceMotion=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
-var camX=W/2, camY=H/2, camAnim=null;
+var camX=W/2, camY=H/2, camRaf=0;
+var camS={k:1,cx:W/2,cy:H/2};               /* what the camera shows right now */
 cam.style.transition="none";
-function camNow(){
-  var m=/matrix\(([^)]+)\)/.exec(getComputedStyle(cam).transform||"");
-  if(!m) return {k:1,x:0,y:0};
-  var v=m[1].split(",").map(Number); return {k:v[0]||1,x:v[4]||0,y:v[5]||0};
+function camNow(){return camS}
+function setCam(k,cx,cy){
+  camS={k:k,cx:cx,cy:cy};
+  cam.style.transform="translate("+(W/2-cx*k)+"px,"+(H/2-cy*k)+"px) scale("+k+")";
 }
-function flyTo(k,x,y,dur,midK){
-  var from=camNow(), end="translate("+x+"px,"+y+"px) scale("+k+")";
-  if(camAnim){camAnim.cancel();camAnim=null}
-  if(reduceMotion||!cam.animate){cam.style.transform=end;return}
-  var f0="translate("+from.x+"px,"+from.y+"px) scale("+from.k+")", frames=[{transform:f0}];
-  if(midK){
-    /* the point in the middle of the screen stays between the old and the new centre */
-    var ox=(W/2-from.x)/from.k, oy=(H/2-from.y)/from.k, nx=(W/2-x)/k, ny=(H/2-y)/k;
-    var mx=(ox+nx)/2, my=(oy+ny)/2;
-    frames.push({transform:"translate("+(W/2-mx*midK)+"px,"+(H/2-my*midK)+"px) scale("+midK+")",offset:.42});
+/* The camera is moved by redrawing the vector map every frame (not by animating a bitmap
+   of it), so lines and borders stay sharp the whole way, also when zoomed in mid-flight. */
+function flyTo(k,cx,cy,dur,midK){
+  if(camRaf){cancelAnimationFrame(camRaf);camRaf=0}
+  if(reduceMotion){setCam(k,cx,cy);return}
+  var a=camS, pts=[{k:a.k,cx:a.cx,cy:a.cy,at:0}];
+  if(midK) pts.push({k:midK,cx:(a.cx+cx)/2,cy:(a.cy+cy)/2,at:.42});
+  pts.push({k:k,cx:cx,cy:cy,at:1});
+  var t0=performance.now();
+  function ease(u){return u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2}
+  function frame(now){
+    var u=Math.min(1,(now-t0)/(dur*1000)), e=ease(u), i=1;
+    while(i<pts.length-1&&e>pts[i].at) i++;
+    var p=pts[i-1], q=pts[i], w=(e-p.at)/(q.at-p.at||1);
+    setCam(Math.exp(Math.log(p.k)+(Math.log(q.k)-Math.log(p.k))*w),
+           p.cx+(q.cx-p.cx)*w, p.cy+(q.cy-p.cy)*w);
+    camRaf=u<1?requestAnimationFrame(frame):0;
   }
-  frames.push({transform:end});
-  cam.style.transform=end;
-  camAnim=cam.animate(frames,{duration:dur*1000,easing:"ease-in-out"});
-  camAnim.onfinish=function(){camAnim=null};
+  camRaf=requestAnimationFrame(frame);
 }
 var CROWD_OK=24; /* up to this many other countries in view is fine */
 function neighboursInView(c,cx,cy,k){
@@ -111,7 +116,7 @@ function neighboursInView(c,cx,cy,k){
 function zoomTo(c){
   if(!c){
     ring.classList.remove("show"); camX=W/2; camY=H/2;
-    flyTo(1,0,0,1,0); return;
+    flyTo(1,W/2,H/2,1,0); return;
   }
   var b=c.b, bw=Math.max(b[2]-b[0],1), bh=Math.max(b[3]-b[1],1);
   var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
@@ -133,7 +138,7 @@ function zoomTo(c){
   var midK=Math.min(from.k,k)*.4;
   midK=Math.min(midK,W/(dx*1.4+W*.25),H/(dy*1.4+H*.3));
   midK=Math.max(1,midK);
-  flyTo(k,W/2-cx*k,H/2-cy*k,dur,(midK<Math.min(from.k,k)*.9)?midK:0);
+  flyTo(k,cx,cy,dur,(midK<Math.min(from.k,k)*.9)?midK:0);
   camX=cx; camY=cy;
   ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",(20/k).toFixed(2));
   ring.classList.toggle("show",bw*k<24&&bh*k<24);
