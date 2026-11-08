@@ -280,7 +280,7 @@ function render(){
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
   var KIND={river:"river",sea:"sea / ocean",mountain:"mountain range",desert:"desert"}, kc=cur.c.k;
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
-  if(kc) lab+='<span class="kind k-'+kc+'">'+KIND[kc]+'</span>';     /* what kind of thing is highlighted */
+  if(kc) lab+='<span class="of">'+KIND[kc]+'</span>';     /* what kind of thing is highlighted, styled like "capital of ..." */
   countEl.innerHTML=counterHtml(lab);
   if(reveal){capEl.className="cap err";capEl.textContent="it\u2019s "+cur.t+" \u2013 type it to learn it"}
   else{capEl.className="cap";capEl.textContent=captionFor()}

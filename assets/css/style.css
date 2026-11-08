@@ -206,14 +206,3 @@ details.sec summary::-webkit-details-marker{display:none}
 .mapctl button{width:36px;height:36px;border-radius:8px;background:var(--bg);color:var(--text);font-size:1.15rem;line-height:1;opacity:.85;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .mapctl button:hover{opacity:1;color:var(--main)}
 @media (max-width:640px){.mapctl button{width:40px;height:40px}}
-
-/* each kind of feature has its own colour, and a tag above the guess names it */
-#cam path.ph.river.on{stroke:#3fa7e0}
-#cam path.ph.sea.on{fill:#3b82c4;stroke:#3b82c4;fill-opacity:.4}
-#cam path.ph.mountain.on{fill:#a67c52;stroke:#7a5230;fill-opacity:.75}
-#cam path.ph.desert.on{fill:#e0b04d;stroke:#b8862a;fill-opacity:.7}
-.count .kind{margin-left:.9rem;font-size:.8rem;padding:.12rem .55rem;border-radius:99px;color:#fff;vertical-align:middle;letter-spacing:.02em}
-.kind.k-river{background:#2f8fc7}
-.kind.k-sea{background:#3b6fb0}
-.kind.k-mountain{background:#8a6340}
-.kind.k-desert{background:#b8862a}
