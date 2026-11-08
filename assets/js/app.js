@@ -478,11 +478,11 @@ function optRow(label,key,vals,hint){
 }
 function buildSheet(){
   var h='<input type="text" id="itemSearch" class="isearch" placeholder="search all lists" autocomplete="off" spellcheck="false" aria-label="Search the lists">';
-  h+='<h3>What to include</h3><p class="snote">Tick exactly what you want to be asked. A topic only counts when it is switched on.</p>';
+  h+='<h3>What to include</h3><p class="snote">Tick exactly what you want to be asked. Switch topics on or off in the main bar.</p>';
   TOPIC_TITLES.forEach(function(t){
     var items=itemsOf(t[0]);
     h+='<details class="sec" data-topic-sec="'+t[0]+'"><summary><span class="stitle">'+t[1]+'</span><span class="cnt" data-cnt="'+t[0]+'"></span></summary>'+
-      '<div class="stools"><label class="inc"><input type="checkbox" data-topicsw="'+t[0]+'"'+(hasTopic(t[0])?' checked':'')+'> include this topic</label>'+
+      '<div class="stools">'+
       '<button type="button" data-all="'+t[0]+'">select all</button><button type="button" data-none="'+t[0]+'">select none</button>';
     if(t[0]==="countries"){
       h+='<span class="only">only:</span>'+Object.keys(D.regions).filter(function(r){return r!=="world"}).map(function(r){
@@ -505,7 +505,7 @@ function buildSheet(){
 function refreshCounts(){
   TOPIC_TITLES.forEach(function(t){
     var items=itemsOf(t[0]), on=items.filter(included).length, c=sheetBody.querySelector('[data-cnt="'+t[0]+'"]');
-    if(c) c.textContent=on+" / "+items.length+(hasTopic(t[0])?"":" \u00b7 off");
+    if(c) c.textContent=on+" / "+items.length;
   });
 }
 function openSheet(){
@@ -533,11 +533,6 @@ sheetBody.addEventListener("change",function(e){
   if(t.dataset.id){
     if(t.checked) OFF.delete(t.dataset.id); else OFF.add(t.dataset.id);
     save("off",JSON.stringify(Array.from(OFF))); sheetChanged=true; refreshCounts();
-  }else if(t.dataset.topicsw){
-    var tp=t.dataset.topicsw, i=S.topics.indexOf(tp);
-    if(t.checked&&i<0) S.topics.push(tp);
-    else if(!t.checked&&i>=0){ if(S.topics.length>1) S.topics.splice(i,1); else {t.checked=true; return} }
-    save("topics",S.topics.join(",")); sheetChanged=true; refreshCounts();
   }
 });
 sheetBody.addEventListener("click",function(e){
