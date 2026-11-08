@@ -1,4 +1,4 @@
-typemap uses the following third-party material.
+maptype uses the following third-party material.
 
 === Natural Earth ===
 Map data from Natural Earth (naturalearthdata.com). Public domain.

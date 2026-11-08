@@ -1,4 +1,4 @@
-# typemap
+# maptype
 
 Learn the countries of the world and their capitals by typing them. Built by Vexut.
 
@@ -9,7 +9,7 @@ index.html                 the page
 404.html                   shown when someone opens a link that doesn't exist
 favicon.svg                tab icon
 robots.txt                 lets search engines index the site
-THIRD-PARTY-NOTICES.txt    licences for the map data and font
+third-party-notices.txt    licences for the map data and font
 assets/css/style.css       all styling and colour themes
 assets/js/app.js           how the game works
 assets/js/data.js          map shapes, country names and capitals (generated)

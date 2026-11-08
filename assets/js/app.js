@@ -1,4 +1,4 @@
-/* typemap app */
+/* maptype app */
 (function(){
 "use strict";
 var D=window.TYPEMAP_DATA;
