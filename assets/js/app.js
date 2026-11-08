@@ -185,7 +185,9 @@ function neighboursInView(c,cx,cy,k){
   }
   return n;
 }
+var manualCam=false;   /* true while the player has zoomed / panned by hand */
 function zoomTo(c){
+  manualCam=false;
   if(!c){
     camX=W/2; camY=H/2;
     flyTo(viewScale(),W/2,H/2,1,0); return;
@@ -578,7 +580,9 @@ sheetBody.addEventListener("input",function(e){
     var p=svg.createSVGPoint(); p.x=clientX; p.y=clientY; p=p.matrixTransform(m.inverse());
     return {x:p.x,y:p.y};
   }
-  function manual(){ if(camRaf){cancelAnimationFrame(camRaf);camRaf=0} }
+  var kbWas=false;   /* was the typing field focused (phone keyboard open) when the touch began? */
+  function manual(){ manualCam=true; if(camRaf){cancelAnimationFrame(camRaf);camRaf=0} }
+  function keepKeyboard(){ if(kbWas) inp.focus({preventScroll:true}) }
   function zoomAt(f,vx,vy){
     manual();
     var a=camS, kMin=viewScale()*.85, k=Math.max(kMin,Math.min(40,a.k*f));
@@ -594,6 +598,8 @@ sheetBody.addEventListener("input",function(e){
     zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1?.05:.0015)),v.x,v.y);
   },{passive:false});
   svg.addEventListener("pointerdown",function(e){
+    if(!Object.keys(pts).length) kbWas=document.activeElement===inp;
+    e.preventDefault();                                     /* do not steal focus from the typing field */
     try{svg.setPointerCapture(e.pointerId)}catch(err){}
     pts[e.pointerId]={x:e.clientX,y:e.clientY}; last=null; svg.classList.add("grab");
   });
@@ -611,17 +617,23 @@ sheetBody.addEventListener("input",function(e){
     }
     pts[e.pointerId]={x:e.clientX,y:e.clientY};
   });
-  function up(e){delete pts[e.pointerId]; if(!Object.keys(pts).length) svg.classList.remove("grab")}
+  function up(e){delete pts[e.pointerId]; if(!Object.keys(pts).length){svg.classList.remove("grab"); keepKeyboard()}}
   svg.addEventListener("pointerup",up); svg.addEventListener("pointercancel",up);
+  svg.addEventListener("mousedown",function(e){e.preventDefault()});
+  document.querySelector(".mapctl").addEventListener("mousedown",function(e){kbWas=document.activeElement===inp;e.preventDefault()});
   svg.addEventListener("dblclick",function(e){var v=toView(e.clientX,e.clientY);zoomAt(2,v.x,v.y)});
-  el("zin").addEventListener("click",function(e){e.stopPropagation();zoomAt(1.5,W/2,H/2)});
-  el("zout").addEventListener("click",function(e){e.stopPropagation();zoomAt(1/1.5,W/2,H/2)});
+  el("zin").addEventListener("click",function(e){e.stopPropagation();zoomAt(1.5,W/2,H/2);keepKeyboard()});
+  el("zout").addEventListener("click",function(e){e.stopPropagation();zoomAt(1/1.5,W/2,H/2);keepKeyboard()});
   el("zreset").addEventListener("click",function(e){e.stopPropagation();zoomTo(cur?cur.c:null);focusInput()});
 })();
 
 /* phone rotated / window resized: frame the current question again */
-var resizeT=0;
+var resizeT=0, lastW=window.innerWidth;
 window.addEventListener("resize",function(){
+  /* The phone keyboard opening or closing only changes the HEIGHT: ignore that, so a hand-set
+     zoom is not thrown away. Only a real width change (rotation, window resize) re-frames. */
+  if(Math.abs(window.innerWidth-lastW)<2) return;
+  lastW=window.innerWidth;
   clearTimeout(resizeT);
   resizeT=setTimeout(function(){ var sp=S.speed; S.speed="instant"; zoomTo(cur?cur.c:null); S.speed=sp },200);
 });
