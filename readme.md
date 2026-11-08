@@ -38,6 +38,7 @@ index.html                  the page
 404.html                    page shown for unknown links
 favicon.svg                 tab icon
 robots.txt                  crawler rules
+LICENSE                     copyright notice
 third-party-notices.txt     licences for map data, names and the font
 assets/css/style.css        styling and themes
 assets/js/app.js            game logic, camera, settings and themes
@@ -79,6 +80,8 @@ Borders and shapes are simplified for learning and take no position on disputed 
 
 Full licence texts are in [`third-party-notices.txt`](third-party-notices.txt).
 
-## Author
+## Copyright
+
+Copyright (c) 2026 Vexut. All rights reserved. The code and design may not be copied, hosted elsewhere or used commercially without written permission; see [`LICENSE`](LICENSE). Third-party data and fonts keep their own licences (see [`third-party-notices.txt`](third-party-notices.txt)).
 
 Built by [Vexut](https://github.com/Vexut).
