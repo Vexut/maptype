@@ -98,6 +98,16 @@ function flyTo(k,x,y,dur,midK){
   camAnim=cam.animate(frames,{duration:dur*1000,easing:"ease-in-out"});
   camAnim.onfinish=function(){camAnim=null};
 }
+var CROWD_OK=24; /* up to this many other countries in view is fine */
+function neighboursInView(c,cx,cy,k){
+  var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
+  for(var i=0;i<D.c.length;i++){
+    if(D.c[i]===c) continue;
+    var b=D.c[i].b, mx=(b[0]+b[2])/2, my=(b[1]+b[3])/2;
+    if(mx>x0&&mx<x1&&my>y0&&my<y1) n++;
+  }
+  return n;
+}
 function zoomTo(c){
   if(!c){
     ring.classList.remove("show"); camX=W/2; camY=H/2;
@@ -110,6 +120,11 @@ function zoomTo(c){
   var f=.05+.65*Math.pow(t,2.5);                             /* share of the view the country fills */
   var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1.3,Math.min(10,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
+  /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
+     border lines when zoomed in. The more countries that would be in view, the further we
+     pull back (by at most about a third). */
+  var crowd=neighboursInView(c,cx,cy,k);
+  k=Math.max(1.3,k*Math.max(.65,Math.min(1,CROWD_OK/Math.max(crowd,1))));
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
   var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
   var dur=1+(1-t)*1.2+dist*.9;                               /* seconds: 1 .. 3.1 */
