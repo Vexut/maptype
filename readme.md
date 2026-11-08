@@ -1,6 +1,6 @@
 # typemap
 
-Learn the countries of the world and their capitals by typing them. Made by vex.
+Learn the countries of the world and their capitals by typing them. Built by Vexut.
 
 ## Files
 
