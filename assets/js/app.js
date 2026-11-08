@@ -384,9 +384,11 @@ var THEMES=[
 ["sunset","sunset","#2b1d2a","#231622","#ff9e64","#7a5c78","#f3e3ea","#f7768e"],
 ["ocean","ocean","#e8f1f5","#d6e4ec","#0b7285","#7b97a6","#17323f","#c0392b"],
 ["paper","paper","#efefef","#e2e2e2","#d6336c","#9a9a9a","#333333","#b02a37"],
+["catppuccin","catppuccin","#1e1e2e","#181825","#cba6f7","#6c7086","#cdd6f4","#f38ba8"],
+["latte","catppuccin latte","#eff1f5","#e6e9ef","#8839ef","#8c8fa1","#4c4f69","#d20f39"],
 ["mono","mono","#000000","#111111","#ffffff","#777777","#dddddd","#ff4d4d"]
 ];
-var LIGHT={light:1,ocean:1,paper:1};
+var LIGHT={light:1,ocean:1,paper:1,latte:1};
 var TVARS=["bg","panel","main","sub","text","err"];
 var themesEl=el("themes"), themeBtn=el("theme"), theme=load("theme","auto",["auto"].concat(THEMES.map(function(t){return t[0]})));
 var th='<button type="button" data-theme="auto" aria-pressed="false">auto (system)</button>';
