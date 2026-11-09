@@ -212,7 +212,7 @@ function zoomTo(c){
      border lines when zoomed in. The more countries that would be in view, the further we
      pull back (by at most about a third). */
   var crowd=neighboursInView(c,cx,cy,k);
-  k=Math.max(1,k*Math.max(.7+.25*small,Math.min(1,CROWD_OK/Math.max(crowd,1))));   /* small ones barely pull back */
+  k=Math.max(1,k*Math.max(.7+.12*small,Math.min(1,CROWD_OK/Math.max(crowd,1))));   /* small ones pull back at most ~18% */
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
