@@ -43,6 +43,8 @@ var S={
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
+  lang2:load("lang2","",LANGS.map(function(l){return l[0]}).concat("")),   /* second language, when two languages is on */
+  multi:load("multi","off",["off","on"]),
   topics:(function(){
     try{var v=(localStorage.getItem("tm-topics")||"").split(",").filter(function(t){return t in TOPICS});if(v.length) return v}catch(e){}
     return ["countries"];
@@ -55,6 +57,12 @@ var S={
 if(S.mode==="copy") S.mode="practice";   /* old saved names: copy -> practice, recall/hint -> test */
 if(S.mode==="recall"||S.mode==="hint") S.mode="test";
 if(S.lang==="both") S.lang="fi"; /* old saved setting */
+function multiOn(){return S.multi==="on"}
+function langsNow(){return multiOn()&&S.lang2&&S.lang2!==S.lang?[S.lang,S.lang2]:[S.lang]}
+function ensureLang2(){
+  if(multiOn()&&(!S.lang2||S.lang2===S.lang)){S.lang2=S.lang==="fi"?"en":"fi"; save("lang2",S.lang2)}
+}
+ensureLang2();
 
 var hintOn=false, hintBtn=document.getElementById("hintBtn");
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
@@ -266,6 +274,7 @@ function render(){
   lineEl.innerHTML=h;
   var bits=[];
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
+  if(langsNow().length>1) bits.push(langLabel(cur.l));
   var KIND={river:"river",sea:"sea / ocean",mountain:"mountain range",desert:"desert"}, kc=cur.c.k;
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
   if(kc) lab+='<span class="of">'+KIND[kc]+'</span>';     /* what kind of thing is highlighted, styled like "capital of ..." */
@@ -278,7 +287,7 @@ function render(){
 }
 
 function makeTasks(list){
-  var out=[], langs=[S.lang];
+  var out=[], langs=langsNow();
   function add(c,k){
     var seen={};
     langs.forEach(function(l){
@@ -400,7 +409,7 @@ function syncButtons(){
   var geo=hasTopic("countries");
   document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
-  el("langCur").textContent=langLabel(S.lang);
+  el("langCur").textContent=langsNow().map(langLabel).join(" & ");
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
   });
@@ -425,16 +434,25 @@ function fillLangs(q){
   q=fold(q||"").trim(); var h="";
   LANGS.forEach(function(l){
     if(q&&fold(l[1]).indexOf(q)<0&&l[0].indexOf(q)<0) return;
-    h+='<button type="button" role="option" data-lang="'+l[0]+'" aria-selected="'+(l[0]===S.lang)+'">'+esc(l[1])+'</button>';
+    h+='<button type="button" role="option" data-lang="'+l[0]+'" aria-selected="'+(langsNow().indexOf(l[0])>=0)+'">'+esc(l[1])+'</button>';
   });
   langList.innerHTML=h||'<span class="none">no match</span>';
 }
+var langDirty=false;
 function toggleLangs(open){
   langPanel.hidden=!open; langBtn.setAttribute("aria-expanded",String(open));
-  if(open){langSearch.value=""; fillLangs(""); langSearch.focus()}
+  if(open){langSearch.placeholder=multiOn()?"pick two languages":"search language"; langSearch.value=""; fillLangs(""); langSearch.focus()}
+  else if(langDirty){langDirty=false; syncButtons(); startRegion()}
 }
 function pickLang(l){
-  toggleLangs(false); S.lang=l; save("lang",l); syncButtons(); startRegion();
+  if(!multiOn()){toggleLangs(false); S.lang=l; save("lang",l); syncButtons(); startRegion(); return}
+  /* two languages: keep up to two picked; a third pick replaces the oldest */
+  var sel=[S.lang,S.lang2].filter(Boolean), i=sel.indexOf(l);
+  if(i>=0){if(sel.length<2) return; sel.splice(i,1)}
+  else{if(sel.length>=2) sel.shift(); sel.push(l)}
+  S.lang=sel[0]; S.lang2=sel[1]||""; save("lang",S.lang); save("lang2",S.lang2);
+  langDirty=true; fillLangs(langSearch.value); el("langCur").textContent=sel.map(langLabel).join(" & ");
+  if(sel.length===2) toggleLangs(false);
 }
 langBtn.addEventListener("click",function(e){e.stopPropagation();toggleLangs(langPanel.hidden)});
 langSearch.addEventListener("input",function(){fillLangs(langSearch.value)});
@@ -490,6 +508,7 @@ function buildSheet(){
   h+='<h3>Round</h3>'+
     optRow("Questions per round","limit",[["all","all"],["10","10"],["20","20"],["30","30"],["50","50"],["100","100"]])+
     optRow("Order","order",[["random","random"],["az","A to Z"]])+
+    optRow("Two languages","multi",[["off","off"],["on","on"]],"ask every name in two languages, one after the other (pick them in the language menu)")+
     optRow("Missed ones","retry",[["on","ask again"],["off","skip"]],"ask them again at the end of the round")+
     '<h3>Camera</h3>'+
     optRow("Travel speed","speed",[["slow","slow"],["normal","normal"],["fast","fast"],["instant","instant"]])+
@@ -538,6 +557,7 @@ sheetBody.addEventListener("click",function(e){
     setItems("countries",function(c){return set.has(c.i)});
   }else if(b.dataset.set){
     S[b.dataset.set]=b.dataset.val; save(b.dataset.set,b.dataset.val); sheetChanged=true;
+    if(b.dataset.set==="multi") ensureLang2();
     b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});
   }else if(b.id==="resetAll"){
     if(window.confirm("Reset all settings and selections?")){
