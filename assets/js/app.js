@@ -205,7 +205,7 @@ function zoomTo(c){
   t=Math.max(0,Math.min(1,t));
   var f=.035+.46*Math.pow(t,2.2);                             /* share of the view the country fills */
   var small=1-Math.min(1,t/.5);                                /* 1 = tiny country, 0 = medium and up */
-  var maxK=MAX_K+3*small;                                     /* small countries may be zoomed in further */
+  var maxK=MAX_K+1.5*small;                                     /* small countries may be zoomed in further */
   var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(maxK,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
