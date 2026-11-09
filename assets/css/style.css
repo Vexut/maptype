@@ -62,7 +62,6 @@ button:focus-visible{outline:2px solid var(--main);outline-offset:2px}
 #cam path{fill:var(--land);stroke:var(--line);stroke-width:.7;vector-effect:non-scaling-stroke;
   stroke-linejoin:round;transition:fill .3s,opacity .3s}
 #cam path.out{opacity:.4}
-#cam .mk{fill:none;stroke:var(--main);stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
 #cam path.on{fill:var(--main);fill-opacity:.85;stroke:var(--main);stroke-width:1.6;opacity:1}
 
 .typing{position:relative;max-width:900px;margin:26px auto 0}

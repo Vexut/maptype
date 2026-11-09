@@ -231,15 +231,7 @@ function applyRegionDim(){
   var set=new Set(D.regions[S.region]), dim=hasTopic("countries")&&S.region!=="world";
   paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i))});
 }
-/* tiny countries (Vatican, Monaco, island states ...) are a dot at this scale, so ring the highlighted one */
-var mk=document.createElementNS(NS,"circle");
-mk.setAttribute("class","mk"); mk.setAttribute("r","4"); mk.style.display="none"; cam.appendChild(mk);
 function highlight(c){
-  mk.style.display="none";
-  if(c&&!c.k&&c.b2[2]-c.b2[0]<5&&c.b2[3]-c.b2[1]<5){
-    mk.setAttribute("cx",(c.b2[0]+c.b2[2])/2); mk.setAttribute("cy",(c.b2[1]+c.b2[3])/2);
-    mk.style.display=""; cam.appendChild(mk);
-  }
   paths.forEach(function(p){p.classList.remove("on")});
   PHYS.forEach(function(f){f.el.classList.remove("on")});
   if(c){var p=c.el||paths[c.i]; p.classList.add("on"); if(c.k!=="sea") cam.appendChild(p);}
