@@ -217,7 +217,7 @@ function zoomTo(c){
   var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
   var dist=Math.min(1,Math.hypot(dx/W,dy/H)*2);
-  var dur=(1+(1-t)*1.2+dist*.9)*({slow:1.7,normal:1,fast:.6,instant:0}[S.speed]||1);   /* seconds, normally 1 .. 3.1 */
+  var dur=(1+(1-t)*1.2+dist*.9)*(1+.3*small)*({slow:1.7,normal:1,fast:.6,instant:0}[S.speed]||1);   /* seconds, normally 1 .. 3.1 */
   /* zoomed-out level for the middle of the trip: wide enough to show both ends */
   var from=camNow();
   var lowest=Math.min(from.k,k);
