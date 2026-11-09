@@ -229,7 +229,7 @@ function zoomTo(c){
   if(small<=0) k=Math.max(1,k*Math.max(.7,Math.min(1,CROWD_OK/Math.max(crowd,1))));
   /* tiny islands in the middle of nowhere: pull out until real land (not just more tiny islands)
      is in view, so you can see where on the map they are instead of staring at empty ocean */
-  if(small>.5){ while(k>1.4&&landInView(c,cx,cy,k)<2) k*=.92; }
+  if(small>.5){ while(k>1.4&&(landInView(c,cx,cy,k)<2||neighboursInView(c,cx,cy,k)<4)) k*=.92; }   /* and always a few neighbours */
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
