@@ -58,7 +58,7 @@ if(S.lang==="both") S.lang="fi"; /* old saved setting */
 
 var hintOn=false, hintBtn=document.getElementById("hintBtn");
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
-var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0;
+var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0, scored=false;
 
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function fold(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
@@ -299,7 +299,7 @@ function makeTasks(list){
 }
 function next(){
   if(ptr>=queue.length){finish();return}
-  cur=queue[ptr]; prep(cur); buf=""; inp.value=""; reveal=false; hintOn=false;
+  cur=queue[ptr]; prep(cur); buf=""; inp.value=""; reveal=false; hintOn=false; scored=false;
   highlight(cur.c); zoomTo(cur.c); render();
 }
 function start(tasks){
@@ -324,9 +324,11 @@ function startRegion(){
   if(!list.length){ nothingSelected(); return; }
   start(makeTasks(list));
 }
-function success(){ptr++;next()}
+/* accuracy counts guesses, not typos: one per question, decided once */
+function score(ok){if(scored) return; scored=true; total++; if(ok) good++}
+function success(){score(true);ptr++;next()}
 function miss(){
-  reveal=true; missed.add(cur);
+  score(false); reveal=true; missed.add(cur);
   if(S.retry==="on"&&!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
   buf=""; inp.value=""; render();
 }
@@ -356,7 +358,8 @@ inp.addEventListener("input",function(){
   var v=inp.value.replace(/[\r\n]/g,"");
   if(v.length>buf.length){
     if(!t0) t0=performance.now();
-    for(var i=buf.length;i<v.length;i++){total++; if(i<cur.t.length&&same(v[i],cur.t[i])) good++}
+    /* practice: the guess is the first letter, right or wrong */
+    if(S.mode==="practice"&&!buf.length) score(same(v[0],cur.t[0]));
   }
   buf=v;
   if(matches()){success();return}
