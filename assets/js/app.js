@@ -192,6 +192,16 @@ function neighboursInView(c,cx,cy,k){
   }
   return n;
 }
+function landInView(c,cx,cy,k){   /* like neighboursInView, but only counts countries that are not tiny */
+  var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
+  for(var i=0;i<D.c.length;i++){
+    var o=D.c[i]; if(o===c) continue;
+    var b=o.b; if(Math.max(b[2]-b[0],b[3]-b[1])<15) continue;
+    var mx=(b[0]+b[2])/2, my=(b[1]+b[3])/2;
+    if(mx>x0&&mx<x1&&my>y0&&my<y1) n++;
+  }
+  return n;
+}
 var manualCam=false;   /* true while the player has zoomed / panned by hand */
 function zoomTo(c){
   manualCam=false;
@@ -207,13 +217,19 @@ function zoomTo(c){
   var small=1-Math.min(1,t/.5);                                /* 1 = tiny country, 0 = medium and up */
   var maxK=MAX_K+1.5*small;                                     /* small countries may be zoomed in further */
   var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(maxK,k));
-  k*=1+.2*Math.max(0,Math.min(1,(.002-size)/.0005));          /* absolutely tiny ones (Liechtenstein, Monaco ...): 20% closer */
+  k*=1+.2*Math.max(0,Math.min(1,(.0032-size)/.0005));          /* absolutely tiny ones (Liechtenstein, Monaco ...): 20% closer */
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
      border lines when zoomed in. The more countries that would be in view, the further we
      pull back (by at most about a third). */
   var crowd=neighboursInView(c,cx,cy,k);
-  k=Math.max(1,k*Math.max(.7+.12*small,Math.min(1,CROWD_OK/Math.max(crowd,1))));   /* small ones pull back at most ~18% */
+  /* Crowding only pulls back medium and big countries. Small ones are zoomed by size alone, so
+     the smaller the country, the closer the camera: a tiny state is never shown wider than a
+     medium one just because it has more neighbours. */
+  if(small<=0) k=Math.max(1,k*Math.max(.7,Math.min(1,CROWD_OK/Math.max(crowd,1))));
+  /* tiny islands in the middle of nowhere: pull out until real land (not just more tiny islands)
+     is in view, so you can see where on the map they are instead of staring at empty ocean */
+  if(small>.5){ while(k>1.4&&landInView(c,cx,cy,k)<2) k*=.92; }
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
