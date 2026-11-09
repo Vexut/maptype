@@ -51,7 +51,6 @@ var S={
   })(),
   limit:load("limit","all",["all","10","20","30","50","100"]),   /* questions per round */
   order:load("order","random",["random","az"]),
-  retry:load("retry","on",["on","off"]),                          /* ask missed ones again at the end */
   speed:load("speed","normal",["slow","normal","fast","instant"])  /* camera travel */
 };
 if(S.mode==="copy") S.mode="practice";   /* old saved names: copy -> practice, recall/hint -> test */
@@ -230,7 +229,15 @@ function applyRegionDim(){
   var set=new Set(D.regions[S.region]), dim=hasTopic("countries")&&S.region!=="world";
   paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i))});
 }
+/* tiny countries (Vatican, Monaco, island states ...) are a dot at this scale, so ring the highlighted one */
+var mk=document.createElementNS(NS,"circle");
+mk.setAttribute("class","mk"); mk.setAttribute("r","4"); mk.style.display="none"; cam.appendChild(mk);
 function highlight(c){
+  mk.style.display="none";
+  if(c&&!c.k&&c.b2[2]-c.b2[0]<5&&c.b2[3]-c.b2[1]<5){
+    mk.setAttribute("cx",(c.b2[0]+c.b2[2])/2); mk.setAttribute("cy",(c.b2[1]+c.b2[3])/2);
+    mk.style.display=""; cam.appendChild(mk);
+  }
   paths.forEach(function(p){p.classList.remove("on")});
   PHYS.forEach(function(f){f.el.classList.remove("on")});
   if(c){var p=c.el||paths[c.i]; p.classList.add("on"); if(c.k!=="sea") cam.appendChild(p);}
@@ -338,7 +345,7 @@ function score(ok){if(scored) return; scored=true; total++; if(ok) good++}
 function success(){score(true);ptr++;next()}
 function miss(){
   score(false); reveal=true; missed.add(cur);
-  if(S.retry==="on"&&!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
+  if(!requeued.has(cur)){requeued.add(cur);queue.push(cur)}
   buf=""; inp.value=""; render();
 }
 function fmt(ms){return clock(ms)}
@@ -509,7 +516,6 @@ function buildSheet(){
     optRow("Questions per round","limit",[["all","all"],["10","10"],["20","20"],["30","30"],["50","50"],["100","100"]])+
     optRow("Order","order",[["random","random"],["az","A to Z"]])+
     optRow("Two languages","multi",[["off","off"],["on","on"]],"ask every name in two languages, one after the other (pick them in the language menu)")+
-    optRow("Missed ones","retry",[["on","ask again"],["off","skip"]],"ask them again at the end of the round")+
     '<h3>Camera</h3>'+
     optRow("Travel speed","speed",[["slow","slow"],["normal","normal"],["fast","fast"],["instant","instant"]])+
     '<h3>Data</h3><div class="srow"><div class="slabel">Reset everything<small>settings and selections</small></div><button type="button" class="danger" id="resetAll">reset</button></div>';
