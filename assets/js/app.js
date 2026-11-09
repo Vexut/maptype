@@ -172,9 +172,9 @@ function fullBox(c){
   return u;
 }
 D.c.forEach(function(c){c.b2=fullBox(c)});
-/* Never zoom in further than this. At 2.4x the window still shows about 40% of the world
+/* Never zoom in further than this. At 3x the window still shows about a third of the world
    across, so you can always see which continent the country is on and what is around it. */
-var MAX_K=2.4;
+var MAX_K=3;
 var CROWD_OK=24; /* up to this many other countries in view is fine */
 function neighboursInView(c,cx,cy,k){
   var x0=cx-W/(2*k), x1=cx+W/(2*k), y0=cy-H/(2*k), y1=cy+H/(2*k), n=0;
@@ -196,7 +196,7 @@ function zoomTo(c){
   var size=Math.max(bw/W,bh/H);                              /* share of the map width/height */
   var t=Math.log(size/.005)/Math.log(.25/.005);              /* 0 = tiny ... 1 = huge */
   t=Math.max(0,Math.min(1,t));
-  var f=.03+.4*Math.pow(t,2.2);                             /* share of the view the country fills */
+  var f=.035+.46*Math.pow(t,2.2);                             /* share of the view the country fills */
   var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(MAX_K,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
