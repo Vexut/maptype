@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg?v=5" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261109b">
+<link rel="stylesheet" href="assets/css/style.css?v=20261109c">
 </head>
 <body>
 <div class="app">
@@ -43,21 +43,17 @@
         <button type="button" data-k="region" data-v="americas" title="North and South America">americas</button>
         <button type="button" data-k="region" data-v="oceania">oceania</button>
       </div>
-      <span class="sep" aria-hidden="true"></span>
+    </div>
+    <div class="opts">
       <div class="grp" role="group" aria-label="Difficulty">
         <button type="button" data-k="mode" data-v="practice" title="The answer appears faintly after you type the first letter. Type over it.">practice</button>
         <button type="button" data-k="mode" data-v="test" title="Nothing is shown. Type it from memory. Enter gives a hint, Enter again gives up.">test</button>
       </div>
-    </div>
-    <div class="opts">
+      <span class="sep" aria-hidden="true"></span>
       <div class="grp" id="askGrp" role="group" aria-label="What to type">
         <button type="button" data-k="ask" data-v="country">country</button>
         <button type="button" data-k="ask" data-v="capital">capital</button>
         <button type="button" data-k="ask" data-v="both" title="Country first, then its capital">both</button>
-      </div>
-      <span class="sep" aria-hidden="true"></span>
-      <div class="grp" role="group" aria-label="Stopwatch">
-        <button type="button" id="swBtn" aria-pressed="false" title="Show a running clock from your first letter and your total time at the end">stopwatch</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp langpick" role="group" aria-label="Language">
@@ -102,7 +98,7 @@
     <p>maptype is a free practice tool for learning the geography of the world by typing: countries and their capitals, plus the main rivers, seas, mountains and deserts. It works in many languages. Built by Vexut. &copy; 2026 Vexut. All rights reserved, except for the third-party material listed under credits.</p>
     <h2>Privacy</h2>
     <p>maptype doesn’t collect any personal data. There are no accounts, ads, analytics or cookies, and the page doesn’t load anything from other websites.</p>
-    <p>Your settings (topic, difficulty, region, what to type, language, stopwatch, best times and theme) are saved in your own browser’s local storage so they’re still there next time. They never leave your device. You can remove them by clearing this site’s data in your browser.</p>
+    <p>Your settings (topic, difficulty, region, what to type, language and theme) are saved in your own browser’s local storage so they’re still there next time. They never leave your device. You can remove them by clearing this site’s data in your browser.</p>
     <p>The service hosting this website may keep standard server logs, such as IP addresses, to run and protect the site. Their own privacy policy explains how they handle that.</p>
     <p id="contactLine" hidden>Questions or corrections: <a id="contact"></a></p>
     <h2>Map and names</h2>
@@ -124,11 +120,11 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
-<script src="assets/js/data.js?v=20261109b" defer></script>
-<script src="assets/js/iso.js?v=20261109b" defer></script>
-<script src="assets/js/capitals.js?v=20261109b" defer></script>
-<script src="assets/js/physical.js?v=20261109b" defer></script>
-<script src="assets/js/app.js?v=20261109b" defer></script>
+<script src="assets/js/data.js?v=20261109c" defer></script>
+<script src="assets/js/iso.js?v=20261109c" defer></script>
+<script src="assets/js/capitals.js?v=20261109c" defer></script>
+<script src="assets/js/physical.js?v=20261109c" defer></script>
+<script src="assets/js/app.js?v=20261109c" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>
 </html>

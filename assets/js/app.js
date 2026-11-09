@@ -50,14 +50,13 @@ var S={
   limit:load("limit","all",["all","10","20","30","50","100"]),   /* questions per round */
   order:load("order","random",["random","az"]),
   retry:load("retry","on",["on","off"]),                          /* ask missed ones again at the end */
-  speed:load("speed","normal",["slow","normal","fast","instant"]), /* camera travel */
-  game:load("game","off",["off","on"])   /* stopwatch on / off */
+  speed:load("speed","normal",["slow","normal","fast","instant"])  /* camera travel */
 };
 if(S.mode==="copy") S.mode="practice";   /* old saved names: copy -> practice, recall/hint -> test */
 if(S.mode==="recall"||S.mode==="hint") S.mode="test";
 if(S.lang==="both") S.lang="fi"; /* old saved setting */
 
-var timer=0, hintOn=false, hintBtn=document.getElementById("hintBtn");
+var hintOn=false, hintBtn=document.getElementById("hintBtn");
 var queue=[], ptr=0, cur=null, buf="", reveal=false, finished=false;
 var missed=new Set(), requeued=new Set(), good=0, total=0, t0=0;
 
@@ -231,12 +230,10 @@ function highlight(c){
 
 function captionFor(){
   var w=cur.k==="p"?"capital":"name";
-  if(timed()&&!t0) return "the stopwatch starts when you type the first letter";
   if(S.mode==="practice") return buf.length?"type the "+w+" you see":"type the first letter to see the "+w;
   if(hintOn) return "first letter given \u00b7 enter to give up";
   return "type the "+w+" from memory \u00b7 enter for a hint";
 }
-function timed(){return S.game==="on"}
 function clock(ms){
   /* plain words: seconds, then minutes, then hours when needed */
   ms=Math.max(0,Number(ms)||0);
@@ -248,18 +245,8 @@ function clock(ms){
 var lastLab="";
 function counterHtml(lab){
   if(lab!==undefined) lastLab=lab;
-  var prog=(Math.min(ptr+1,queue.length))+"/"+queue.length+lastLab;
-  if(!timed()) return prog;
-  return '<span class="clk">'+clock(t0?performance.now()-t0:0)+"</span> \u00b7 "+prog;
+  return (Math.min(ptr+1,queue.length))+"/"+queue.length+lastLab;
 }
-function stopTimer(){if(timer){clearInterval(timer);timer=0}}
-function startTimer(){
-  stopTimer();
-  timer=setInterval(function(){countEl.innerHTML=counterHtml()},100);
-}
-function bestKey(){return "tm-besttime-"+S.region+"-"+S.ask+"-"+S.lang+"-"+S.mode}
-function getBest(){try{return parseInt(localStorage.getItem(bestKey()),10)||0}catch(e){return 0}}
-function setBest(n){try{localStorage.setItem(bestKey(),String(n))}catch(e){}}
 function render(){
   if(!cur) return;
   var t=cur.t, n=Math.max(t.length,buf.length), h="", showFull=(S.mode==="practice"&&buf.length>0||reveal);
@@ -316,14 +303,13 @@ function next(){
   highlight(cur.c); zoomTo(cur.c); render();
 }
 function start(tasks){
-  stopTimer();
   queue=tasks; ptr=0; missed=new Set(); requeued=new Set();
   good=0; total=0; t0=0; finished=false;
   resEl.hidden=true; typing.hidden=false;
   next(); focusInput();
 }
 function nothingSelected(){
-  stopTimer(); cur=null; finished=true; highlight(null); zoomTo(null);
+  cur=null; finished=true; highlight(null); zoomTo(null);
   resEl.innerHTML='<h2>nothing selected</h2><p class="best">Everything in the chosen topics is switched off.</p>'+
     '<div class="acts"><button type="button" id="openSet2">open settings</button></div>';
   resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
@@ -346,20 +332,14 @@ function miss(){
 }
 function fmt(ms){return clock(ms)}
 function finish(){
-  stopTimer();
   finished=true; cur=null; highlight(null); zoomTo(null);
   var acc=total?Math.round(100*good/total):100;
-  var elapsed=t0?performance.now()-t0:0, time=t0?fmt(elapsed):"0.0 s", best=0, isBest=false;
-  if(timed()&&t0){
-    var prev=getBest(); best=prev;
-    if(!prev||elapsed<prev){setBest(Math.round(elapsed)); isBest=!!prev; best=Math.round(elapsed)}
-  }
+  var elapsed=t0?performance.now()-t0:0, time=t0?fmt(elapsed):"0.0 s";
   var list=Array.from(missed);
   var h='<div class="stats">'+
     '<div class="stat"><div class="l">accuracy</div><div class="val">'+acc+'%</div></div>'+
     '<div class="stat"><div class="l">answers</div><div class="val">'+(queue.length-requeued.size)+'</div></div>'+
     '<div class="stat"><div class="l">time</div><div class="val">'+time+'</div></div></div>';
-  if(timed()&&t0) h+='<p class="best">'+(isBest?"new best time!":"best time: "+fmt(best))+"</p>";
   if(list.length){
     h+='<h2>missed</h2><div class="miss">'+list.map(function(t){
       return "<span>"+esc(t.t)+(t.k==="p"?" ("+esc(nameOf(t.c,t.l))+")":"")+"</span>"}).join("")+"</div>";
@@ -375,7 +355,7 @@ inp.addEventListener("input",function(){
   if(!cur||finished){inp.value="";return}
   var v=inp.value.replace(/[\r\n]/g,"");
   if(v.length>buf.length){
-    if(!t0){t0=performance.now(); if(timed()) startTimer()}
+    if(!t0) t0=performance.now();
     for(var i=buf.length;i<v.length;i++){total++; if(i<cur.t.length&&same(v[i],cur.t[i])) good++}
   }
   buf=v;
@@ -415,7 +395,6 @@ el("restart").addEventListener("click",function(e){e.stopPropagation();startRegi
 
 function syncButtons(){
   var geo=hasTopic("countries");
-  el("swBtn").setAttribute("aria-pressed",String(S.game==="on"));
   document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langLabel(S.lang);
@@ -424,9 +403,6 @@ function syncButtons(){
   });
 }
 el("opts").addEventListener("click",function(e){
-  if(e.target.closest("#swBtn")){                  /* stopwatch: tick on / off */
-    S.game=S.game==="on"?"off":"on"; save("game",S.game); syncButtons(); startRegion(); return;
-  }
   var tb=e.target.closest("[data-topic]");
   if(tb){                                          /* switch a topic on or off; at least one stays on */
     var t=tb.dataset.topic, i=S.topics.indexOf(t);
@@ -514,7 +490,7 @@ function buildSheet(){
     optRow("Missed ones","retry",[["on","ask again"],["off","skip"]],"ask them again at the end of the round")+
     '<h3>Camera</h3>'+
     optRow("Travel speed","speed",[["slow","slow"],["normal","normal"],["fast","fast"],["instant","instant"]])+
-    '<h3>Data</h3><div class="srow"><div class="slabel">Reset everything<small>settings, selections and best times</small></div><button type="button" class="danger" id="resetAll">reset</button></div>';
+    '<h3>Data</h3><div class="srow"><div class="slabel">Reset everything<small>settings and selections</small></div><button type="button" class="danger" id="resetAll">reset</button></div>';
   sheetBody.innerHTML=h; refreshCounts();
 }
 function refreshCounts(){
@@ -561,7 +537,7 @@ sheetBody.addEventListener("click",function(e){
     S[b.dataset.set]=b.dataset.val; save(b.dataset.set,b.dataset.val); sheetChanged=true;
     b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});
   }else if(b.id==="resetAll"){
-    if(window.confirm("Reset all settings, selections and best times?")){
+    if(window.confirm("Reset all settings and selections?")){
       try{Object.keys(localStorage).filter(function(k){return k.indexOf("tm-")===0}).forEach(function(k){localStorage.removeItem(k)})}catch(err){}
       location.reload();
     }
