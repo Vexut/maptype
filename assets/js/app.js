@@ -207,6 +207,7 @@ function zoomTo(c){
   var small=1-Math.min(1,t/.5);                                /* 1 = tiny country, 0 = medium and up */
   var maxK=MAX_K+1.5*small;                                     /* small countries may be zoomed in further */
   var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(maxK,k));
+  k*=1+.2*Math.max(0,Math.min(1,(.002-size)/.0005));          /* absolutely tiny ones (Liechtenstein, Monaco ...): 20% closer */
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
      border lines when zoomed in. The more countries that would be in view, the further we
