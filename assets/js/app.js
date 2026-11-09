@@ -39,7 +39,7 @@ var LANGS=[["en","English"],["fi","Suomi"],["sv","Svenska"],["da","Dansk"],["nb"
 ["hu","Magyar"],["ro","Română"],["et","Eesti"],["lv","Latviešu"],["lt","Lietuvių"],["tr","Türkçe"],["id","Bahasa Indonesia"],
 ["ru","Русский"],["uk","Українська"],["bg","Български"],["sr","Српски"],["el","Ελληνικά"]];
 var S={
-  mode:load("mode","copy",["copy","recall","hint"]),
+  mode:load("mode","practice",["practice","test","copy","recall","hint"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
@@ -53,7 +53,8 @@ var S={
   speed:load("speed","normal",["slow","normal","fast","instant"]), /* camera travel */
   game:load("game","off",["off","on"])   /* stopwatch on / off */
 };
-if(S.mode==="hint") S.mode="recall";   /* the old hint mode now lives inside recall */
+if(S.mode==="copy") S.mode="practice";   /* old saved names: copy -> practice, recall/hint -> test */
+if(S.mode==="recall"||S.mode==="hint") S.mode="test";
 if(S.lang==="both") S.lang="fi"; /* old saved setting */
 
 var timer=0, hintOn=false, hintBtn=document.getElementById("hintBtn");
@@ -231,7 +232,7 @@ function highlight(c){
 function captionFor(){
   var w=cur.k==="p"?"capital":"name";
   if(timed()&&!t0) return "the stopwatch starts when you type the first letter";
-  if(S.mode==="copy") return "type the "+w+" you see";
+  if(S.mode==="practice") return buf.length?"type the "+w+" you see":"type the first letter to see the "+w;
   if(hintOn) return "first letter given \u00b7 enter to give up";
   return "type the "+w+" from memory \u00b7 enter for a hint";
 }
@@ -261,7 +262,7 @@ function getBest(){try{return parseInt(localStorage.getItem(bestKey()),10)||0}ca
 function setBest(n){try{localStorage.setItem(bestKey(),String(n))}catch(e){}}
 function render(){
   if(!cur) return;
-  var t=cur.t, n=Math.max(t.length,buf.length), h="", showFull=(S.mode==="copy"||reveal);
+  var t=cur.t, n=Math.max(t.length,buf.length), h="", showFull=(S.mode==="practice"&&buf.length>0||reveal);
   for(var i=0;i<=n;i++){
     if(i===buf.length) h+='<span class="caret"></span>';
     if(i>=n) break;
@@ -269,7 +270,7 @@ function render(){
     if(i<buf.length){
       var ok=i<t.length&&same(buf[i],t[i]);
       if(ok){ch=t[i];cls="ok"}
-      else{ch=(S.mode==="copy"&&i<t.length)?t[i]:buf[i];cls="bad"+(ch===" "?" sp":"")}
+      else{ch=(S.mode==="practice"&&i<t.length)?t[i]:buf[i];cls="bad"+(ch===" "?" sp":"")}
     }else if(showFull){ch=t[i]}
     else if(hintOn&&i===0){ch=t[0]}
     else continue;
@@ -284,9 +285,9 @@ function render(){
   countEl.innerHTML=counterHtml(lab);
   if(reveal){capEl.className="cap err";capEl.textContent="it\u2019s "+cur.t+" \u2013 type it to learn it"}
   else{capEl.className="cap";capEl.textContent=captionFor()}
-  keysEl.hidden=(S.mode==="copy"||reveal);
-  keysEl.innerHTML=(S.mode==="recall"&&!hintOn)?"<kbd>enter</kbd> hint \u00b7 <kbd>enter</kbd> again to give up":"<kbd>enter</kbd> give up and see the answer";
-  hintBtn.hidden=!(S.mode==="recall"&&!hintOn&&!reveal);
+  keysEl.hidden=(S.mode==="practice"||reveal);
+  keysEl.innerHTML=(S.mode==="test"&&!hintOn)?"<kbd>enter</kbd> hint \u00b7 <kbd>enter</kbd> again to give up":"<kbd>enter</kbd> give up and see the answer";
+  hintBtn.hidden=!(S.mode==="test"&&!hintOn&&!reveal);
 }
 
 function makeTasks(list){
@@ -379,15 +380,15 @@ inp.addEventListener("input",function(){
   }
   buf=v;
   if(matches()){success();return}
-  if(!reveal&&S.mode!=="copy"&&key(buf).length>=key(cur.t).length){miss();return}
+  if(!reveal&&S.mode!=="practice"&&key(buf).length>=key(cur.t).length){miss();return}
   render();
 });
 inp.addEventListener("keydown",function(e){
   if(e.key==="Tab"){e.preventDefault();startRegion();return}
   if(e.key==="Enter"){
     e.preventDefault();
-    if(cur&&!reveal&&S.mode!=="copy"){
-      if(S.mode==="recall"&&!hintOn){hintOn=true;render()}   /* first enter = hint, second = give up */
+    if(cur&&!reveal&&S.mode!=="practice"){
+      if(S.mode==="test"&&!hintOn){hintOn=true;render()}   /* first enter = hint, second = give up */
       else miss();
     }
   }
@@ -407,7 +408,7 @@ inp.addEventListener("blur",function(){typing.classList.add("blurred")});
 typing.addEventListener("click",focusInput);
 hintBtn.addEventListener("click",function(e){
   e.stopPropagation();
-  if(cur&&!reveal&&S.mode==="recall"&&!hintOn){hintOn=true;render()}
+  if(cur&&!reveal&&S.mode==="test"&&!hintOn){hintOn=true;render()}
   focusInput();
 });
 el("restart").addEventListener("click",function(e){e.stopPropagation();startRegion()});

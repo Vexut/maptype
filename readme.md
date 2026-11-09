@@ -12,7 +12,7 @@ maptype shows a place on the map and you type its name. It is a small static web
 
 - **Five topics, in any combination:** countries (with capitals), rivers, seas and oceans, mountain ranges, and deserts.
 - **Many languages:** country names and capitals follow the language you pick, with a searchable language menu. Where a translation is not available the English name is used, and English is always accepted as an answer.
-- **Two difficulties:** *copy* (type over the faint answer) and *recall* (type from memory, press Enter once for a hint and again to give up).
+- **Two modes:** *practice* (the faint answer appears once you type the first letter; wrong letters turn red) and *test* (type from memory, press Enter once for a hint and again to give up).
 - **Stopwatch:** an optional running clock with your total time and personal best for each setup.
 - **Fine-grained settings:** pick exactly which countries, rivers, seas, mountains and deserts you are asked about, plus questions per round, order, retrying missed items and camera speed.
 - **Smart camera:** the map flies to each question and chooses how much of the surroundings to show based on the size of the place and how crowded the area is. You can also zoom and pan by hand (mouse wheel, drag, pinch, or the on-map buttons).
