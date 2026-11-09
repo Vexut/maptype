@@ -204,13 +204,15 @@ function zoomTo(c){
   var t=Math.log(size/.005)/Math.log(.25/.005);              /* 0 = tiny ... 1 = huge */
   t=Math.max(0,Math.min(1,t));
   var f=.035+.46*Math.pow(t,2.2);                             /* share of the view the country fills */
-  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(MAX_K,k));
+  var small=1-Math.min(1,t/.5);                                /* 1 = tiny country, 0 = medium and up */
+  var maxK=MAX_K+3*small;                                     /* small countries may be zoomed in further */
+  var k=Math.min(W*f/bw,H*f/bh); k=Math.max(1,Math.min(maxK,k));
   var cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
   /* Crowded places (Europe, the Balkans, Central Asia, West Africa ...) turn into a mess of
      border lines when zoomed in. The more countries that would be in view, the further we
      pull back (by at most about a third). */
   var crowd=neighboursInView(c,cx,cy,k);
-  k=Math.max(1,k*Math.max(.7,Math.min(1,CROWD_OK/Math.max(crowd,1))));
+  k=Math.max(1,k*Math.max(.7+.25*small,Math.min(1,CROWD_OK/Math.max(crowd,1))));   /* small ones barely pull back */
   k=Math.max(1,Math.min(k,W*.9/bw,H*.9/bh));                 /* the whole country must fit in the window */
   var sc=viewScale(); k*=sc;                                  /* narrow phone window: show a smaller part of the map */
   var dx=Math.abs(cx-camX), dy=Math.abs(cy-camY);
