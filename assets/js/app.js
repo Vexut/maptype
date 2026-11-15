@@ -143,9 +143,7 @@ function flyTo(k,cx,cy,dur,midK){
      The three stages overlap a little so the motion never stops dead between them. */
   function frame(now){
     var u=Math.min(1,Math.max(0,(now-t0)/(dur*1000))), lk;
-    if(u<.32) lk=lerp(lk0,lkm,ease(u/.32));
-    else if(u<.62) lk=lkm;
-    else lk=lerp(lkm,lk1,ease((u-.62)/.38));
+    lk=lerp(lk0,lk1,ease(u));   /* one smooth zoom from where we are to the target: no zoom-out-and-back-in, which looked like the map losing focus */
     var w=ease((u-.2)/.6);
     setCam(Math.exp(lk),lerp(a.cx,cx,w),lerp(a.cy,cy,w));
     camRaf=u<1?requestAnimationFrame(frame):0;
