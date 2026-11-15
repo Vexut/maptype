@@ -39,7 +39,7 @@ var LANGS=[["en","English"],["fi","Suomi"],["sv","Svenska"],["da","Dansk"],["nb"
 ["hu","Magyar"],["ro","Română"],["et","Eesti"],["lv","Latviešu"],["lt","Lietuvių"],["tr","Türkçe"],["id","Bahasa Indonesia"],
 ["ru","Русский"],["uk","Українська"],["bg","Български"],["sr","Српски"],["el","Ελληνικά"]];
 var S={
-  mode:load("mode","practice",["practice","test","copy","recall","hint"]),
+  mode:load("mode","practice",["practice","test","fill","copy","recall","hint"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
@@ -342,14 +342,114 @@ function nothingSelected(){
   resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
   el("openSet2").onclick=function(){openSheet()};
 }
+function clearMarks(){
+  paths.forEach(function(p){p.classList.remove("got","miss")});
+  PHYS.forEach(function(f){f.el.classList.remove("got","miss")});
+}
 function startRegion(){
-  applyRegionDim();
+  applyRegionDim(); clearMarks(); fill=null; clearTimeout(fillTimer); hintBtn.textContent="hint";
   var list=[];
   if(hasTopic("countries")) list=D.regions[S.region].map(function(i){return D.c[i]});
   var kinds=S.topics.map(function(t){return TOPICS[t]}).filter(Boolean);
   list=list.concat(PHYS.filter(function(f){return kinds.indexOf(f.k)>=0})).filter(included);
   if(!list.length){ nothingSelected(); return; }
+  if(S.mode==="fill"){ startFill(list); return; }
   start(makeTasks(list));
+}
+
+/* Fill the map: no questions. Type any name, in any order; what you hit is coloured in. */
+var fill=null, fillTimer=0;
+function startFill(list){
+  var langs=langsNow(), lookup={}, keys=[];
+  var items=list.map(function(c){
+    var it={c:c,got:false}, kinds=[], ask=c.k?"country":S.ask;
+    if(ask!=="capital") kinds.push("n");
+    if(ask!=="country") kinds.push("p");
+    kinds.forEach(function(kind){langs.forEach(function(l){
+      var t={c:c,k:kind,l:l}; prep(t);
+      [t.t].concat(t.al||[]).forEach(function(n){
+        if(!n) return; var k=key(n); if(!k) return;
+        (lookup[k]=lookup[k]||[]).indexOf(it)<0&&lookup[k].push(it);
+      });
+    })});
+    return it;
+  });
+  Object.keys(lookup).forEach(function(k){lookup[k].forEach(function(it){keys.push({k:k,it:it})})});
+  fill={items:items,lookup:lookup,keys:keys,found:0,done:false};
+  cur=null; finished=false; buf=""; inp.value=""; t0=0;
+  highlight(null); fillView(list);
+  resEl.hidden=true; typing.hidden=false; focusInput(); renderFill();
+}
+/* frame the chosen area: the middle 90% of the places, so one far-off island does not zoom us out */
+function fillView(list){
+  if(list.length<3||list.length>=D.c.length*.9){zoomTo(null);return}
+  var xs=[],ys=[];
+  list.forEach(function(c){var b=c.b; xs.push((b[0]+b[2])/2); ys.push((b[1]+b[3])/2)});
+  xs.sort(function(a,b){return a-b}); ys.sort(function(a,b){return a-b});
+  var lo=Math.floor(xs.length*.05), hi=Math.ceil(xs.length*.95)-1;
+  var w=(xs[hi]-xs[lo])*1.25+W*.08, h=(ys[hi]-ys[lo])*1.25+H*.08;
+  var sc=viewScale(), k=Math.max(sc,Math.min(4,Math.min(W*sc/w,H/h)));
+  manualCam=false; camX=(xs[lo]+xs[hi])/2; camY=(ys[lo]+ys[hi])/2;
+  flyTo(k,camX,camY,1.2,0);
+}
+function fillHasPrefix(k){
+  for(var i=0;i<fill.keys.length;i++){var e=fill.keys[i]; if(!e.it.got&&e.k.indexOf(k)===0) return true}
+  return false;
+}
+function fillHit(k){var a=fill.lookup[k]||[];for(var i=0;i<a.length;i++) if(!a[i].got) return a[i]; return null}
+function renderFill(){
+  var h="", k=key(buf), bad=buf.length>0&&!fillHasPrefix(k);
+  for(var i=0;i<buf.length;i++){
+    h+='<span class="'+(bad?"bad":"ok")+(buf[i]===" "?" sp":"")+'">'+esc(buf[i])+"</span>";
+  }
+  lineEl.innerHTML=h+'<span class="caret"></span>';
+  var of=S.ask==="capital"?"capital":"country";
+  countEl.innerHTML=fill.found+"/"+fill.items.length+'<span class="of">fill the map</span>';
+  capEl.className="cap"; capEl.textContent="type any "+(fill.items[0]&&fill.items[0].c.k?"name":of)+", in any order \u00b7 it gets coloured in";
+  keysEl.hidden=false; keysEl.innerHTML="<kbd>enter</kbd> confirm a name \u00b7 or give up to see what is left";
+  hintBtn.textContent="give up"; hintBtn.hidden=false;
+}
+function fillAccept(it){
+  clearTimeout(fillTimer);
+  it.got=true; fill.found++;
+  (it.c.el||paths[it.c.i]).classList.add("got");
+  buf=""; inp.value="";
+  if(fill.found===fill.items.length) finishFill(false); else renderFill();
+}
+function fillInput(){
+  if(fill.done){inp.value="";return}
+  clearTimeout(fillTimer);
+  var v=inp.value.replace(/[\r\n]/g,"");
+  if(v.length>buf.length&&!t0) t0=performance.now();
+  buf=v;
+  var k=key(buf), it=k&&fillHit(k);
+  if(it){
+    /* "Niger" is also the start of "Nigeria": wait a moment (or Enter) before taking a name that is a prefix of another */
+    var longer=fill.keys.some(function(e){return !e.it.got&&e.k.length>k.length&&e.k.indexOf(k)===0});
+    if(!longer){fillAccept(it);return}
+    fillTimer=setTimeout(function(){if(fill&&!fill.done&&key(buf)===k){var h=fillHit(k); if(h) fillAccept(h)}},900);
+  }
+  renderFill();
+}
+function fillEnter(){
+  if(fill.done) return;
+  var it=fillHit(key(buf)); if(it) fillAccept(it);
+}
+function finishFill(gaveUp){
+  clearTimeout(fillTimer); fill.done=true; finished=true;
+  var left=fill.items.filter(function(it){return !it.got});
+  left.forEach(function(it){(it.c.el||paths[it.c.i]).classList.add("miss")});
+  var total=fill.items.length, time=t0?clock(performance.now()-t0):"0.0 s";
+  var h='<div class="stats">'+
+    '<div class="stat"><div class="l">found</div><div class="val">'+fill.found+'/'+total+'</div></div>'+
+    '<div class="stat"><div class="l">share</div><div class="val">'+Math.round(100*fill.found/total)+'%</div></div>'+
+    '<div class="stat"><div class="l">time</div><div class="val">'+time+'</div></div></div>';
+  if(left.length){
+    h+='<h2>missed (red on the map)</h2><div class="miss">'+left.map(function(it){return "<span>"+esc(nameOf(it.c,S.lang))+"</span>"}).join("")+"</div>";
+  }
+  h+='<div class="acts"><button type="button" id="again">go again</button></div>';
+  resEl.innerHTML=h; resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
+  el("again").onclick=startRegion;
 }
 /* accuracy counts guesses, not typos: one per question, decided once */
 function score(ok){if(scored) return; scored=true; total++; if(ok) good++}
@@ -381,6 +481,7 @@ function finish(){
 }
 
 inp.addEventListener("input",function(){
+  if(fill){fillInput();return}
   if(!cur||finished){inp.value="";return}
   var v=inp.value.replace(/[\r\n]/g,"");
   if(v.length>buf.length){
@@ -397,6 +498,7 @@ inp.addEventListener("keydown",function(e){
   if(e.key==="Tab"){e.preventDefault();startRegion();return}
   if(e.key==="Enter"){
     e.preventDefault();
+    if(fill){fillEnter();return}
     if(cur&&!reveal&&S.mode!=="practice"){
       if(S.mode==="test"&&!hintOn){hintOn=true;render()}   /* first enter = hint, second = give up */
       else miss();
@@ -418,6 +520,7 @@ inp.addEventListener("blur",function(){typing.classList.add("blurred")});
 typing.addEventListener("click",focusInput);
 hintBtn.addEventListener("click",function(e){
   e.stopPropagation();
+  if(fill){ if(!fill.done) finishFill(true); return }
   if(cur&&!reveal&&S.mode==="test"&&!hintOn){hintOn=true;render()}
   focusInput();
 });
@@ -428,6 +531,8 @@ function syncButtons(){
   document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langsNow().map(langLabel).join(" & ");
+  var inReg=D.regions[S.region].map(function(i){return D.c[i]}), onN=inReg.filter(included).length;
+  el("pickCnt").textContent=onN<inReg.length?"("+onN+"/"+inReg.length+")":"";
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
   });
@@ -538,8 +643,10 @@ function refreshCounts(){
     if(c) c.textContent=on+" / "+items.length;
   });
 }
-function openSheet(){
+function openSheet(topic){
   sheetChanged=false; buildSheet(); sheet.hidden=false; document.body.classList.add("noscroll");
+  var d=topic&&sheetBody.querySelector('[data-topic-sec="'+topic+'"]');
+  if(d){d.open=true; d.scrollIntoView({block:"start"})}
   el("sheetClose").focus();
 }
 function closeSheet(){
@@ -549,6 +656,7 @@ function closeSheet(){
   focusInput();
 }
 el("settingsBtn").addEventListener("click",function(e){e.stopPropagation();openSheet()});
+el("pickBtn").addEventListener("click",function(e){e.stopPropagation();openSheet("countries")});
 el("sheetClose").addEventListener("click",closeSheet);
 sheet.addEventListener("click",function(e){if(e.target===sheet) closeSheet()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!sheet.hidden){e.preventDefault();closeSheet()}});

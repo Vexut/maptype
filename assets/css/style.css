@@ -205,3 +205,11 @@ details.sec summary::-webkit-details-marker{display:none}
 .mapctl button{width:36px;height:36px;border-radius:8px;background:var(--bg);color:var(--text);font-size:1.15rem;line-height:1;opacity:.85;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .mapctl button:hover{opacity:1;color:var(--main)}
 @media (max-width:640px){.mapctl button{width:40px;height:40px}}
+
+/* fill-the-map mode: found items are coloured in, the ones you gave up on turn red */
+#cam path.got{fill:var(--main);fill-opacity:.85;stroke:var(--main);stroke-width:1.2;opacity:1}
+#cam path.miss{fill:var(--err);fill-opacity:.55;stroke:var(--err);stroke-width:1.2;opacity:1}
+#cam path.ph.got,#cam path.ph.miss{display:inline;fill-opacity:.5}
+#cam path.ph.got{stroke:var(--main);fill:var(--main)}
+#cam path.ph.miss{stroke:var(--err);fill:var(--err)}
+#cam path.ph.river.got,#cam path.ph.river.miss{fill:none;stroke-width:2.6;stroke-linecap:round}

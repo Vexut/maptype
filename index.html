@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg?v=5" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/roboto-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261109q">
+<link rel="stylesheet" href="assets/css/style.css?v=20261115b">
 </head>
 <body>
 <div class="app">
@@ -42,12 +42,14 @@
         <button type="button" data-k="region" data-v="africa">africa</button>
         <button type="button" data-k="region" data-v="americas" title="North and South America">americas</button>
         <button type="button" data-k="region" data-v="oceania">oceania</button>
+        <button type="button" id="pickBtn" title="Choose exactly which countries you are asked about">choose&hellip; <span id="pickCnt"></span></button>
       </div>
     </div>
     <div class="opts">
       <div class="grp" role="group" aria-label="Difficulty">
         <button type="button" data-k="mode" data-v="practice" title="The answer appears faintly after you type the first letter. Type over it.">practice</button>
         <button type="button" data-k="mode" data-v="test" title="Nothing is shown. Type it from memory. Enter gives a hint, Enter again gives up.">test</button>
+        <button type="button" data-k="mode" data-v="fill" title="No questions: type any name in any order and it is coloured in on the map.">fill the map</button>
       </div>
       <span class="sep" aria-hidden="true"></span>
       <div class="grp" id="askGrp" role="group" aria-label="What to type">
@@ -120,11 +122,11 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the answer">
 
-<script src="assets/js/data.js?v=20261109q" defer></script>
-<script src="assets/js/iso.js?v=20261109q" defer></script>
-<script src="assets/js/capitals.js?v=20261109q" defer></script>
-<script src="assets/js/physical.js?v=20261109q" defer></script>
-<script src="assets/js/app.js?v=20261109q" defer></script>
+<script src="assets/js/data.js?v=20261115b" defer></script>
+<script src="assets/js/iso.js?v=20261115b" defer></script>
+<script src="assets/js/capitals.js?v=20261115b" defer></script>
+<script src="assets/js/physical.js?v=20261115b" defer></script>
+<script src="assets/js/app.js?v=20261115b" defer></script>
 <noscript><p style="text-align:center">maptype needs JavaScript to run.</p></noscript>
 </body>
 </html>
