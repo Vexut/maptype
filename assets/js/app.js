@@ -127,8 +127,10 @@ cam.style.transition="none";
 function camNow(){return camS}
 function setCam(k,cx,cy){
   camS={k:k,cx:cx,cy:cy};
-  /* an SVG attribute, not CSS: the browser can never turn it into a stretched bitmap */
-  cam.setAttribute("transform","translate("+(W/2-cx*k)+" "+(H/2-cy*k)+") scale("+k+")");
+  /* The camera is the SVG's own viewBox, not a transform on a group. Browsers like to draw a
+     transformed group once as a bitmap and stretch it while it moves (slightly blurry), then
+     redraw it sharp when it stops. A changing viewBox is redrawn as vectors on every frame. */
+  svg.setAttribute("viewBox",(cx-W/(2*k))+" "+(cy-H/(2*k))+" "+(W/k)+" "+(H/k));
 }
 /* The camera is moved by redrawing the vector map every frame (not by animating a bitmap
    of it), so lines and borders stay sharp the whole way, also when zoomed in mid-flight. */
@@ -753,7 +755,8 @@ sheetBody.addEventListener("input",function(e){
   function toView(clientX,clientY){
     var m=svg.getScreenCTM(); if(!m) return {x:W/2,y:H/2};
     var p=svg.createSVGPoint(); p.x=clientX; p.y=clientY; p=p.matrixTransform(m.inverse());
-    return {x:p.x,y:p.y};
+    /* p is in map coordinates; the zoom / pan maths below works in the fixed W x H view window */
+    return {x:(p.x-camS.cx)*camS.k+W/2,y:(p.y-camS.cy)*camS.k+H/2};
   }
   var kbWas=false;   /* was the typing field focused (phone keyboard open) when the touch began? */
   function manual(){ manualCam=true; if(camRaf){cancelAnimationFrame(camRaf);camRaf=0} }
