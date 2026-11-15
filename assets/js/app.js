@@ -17,12 +17,13 @@ var paths=D.c.map(function(c,i){
 /* rivers, seas, mountains and deserts: hidden until one of them is the current question.
    Seas sit under the countries, everything else on top. */
 var PHYS=(window.TYPEMAP_PHYS||[]).map(function(f){
+  if(f.k==="sea"&&/ Ocean$/.test(f.f)) f.k="ocean";   /* the five oceans are a topic of their own */
   var p=document.createElementNS(NS,"path");
   p.setAttribute("d",f.d); p.setAttribute("class","ph "+f.k);
-  if(f.k==="sea") cam.insertBefore(p,paths[0]); else cam.appendChild(p);
+  if(f.k==="sea"||f.k==="ocean") cam.insertBefore(p,paths[0]); else cam.appendChild(p);
   f.el=p; f.b2=f.b; return f;
 });
-var TOPICS={countries:null,rivers:"river",seas:"sea",mountains:"mountain",deserts:"desert"};   /* any combination can be on */
+var TOPICS={countries:null,rivers:"river",seas:"sea",oceans:"ocean",mountains:"mountain",deserts:"desert"};   /* any combination can be on */
 var CAPS=window.TYPEMAP_CAPS||{};
 /* items switched off in the settings sheet (countries "c:Name", others "river:Name" ...) */
 var OFF=(function(){try{return new Set(JSON.parse(localStorage.getItem("tm-off")||"[]"))}catch(e){return new Set()}})();
@@ -256,7 +257,7 @@ function applyRegionDim(){
 function highlight(c){
   paths.forEach(function(p){p.classList.remove("on")});
   PHYS.forEach(function(f){f.el.classList.remove("on")});
-  if(c){var p=c.el||paths[c.i]; p.classList.add("on"); if(c.k!=="sea") cam.appendChild(p);}
+  if(c){var p=c.el||paths[c.i]; p.classList.add("on"); if(c.k!=="sea"&&c.k!=="ocean") cam.appendChild(p);}
 }
 
 function captionFor(){
@@ -298,7 +299,7 @@ function render(){
   var bits=[];
   if(cur.k==="p") bits.push("capital of "+nameOf(cur.c,cur.l));
   if(langsNow().length>1) bits.push(langLabel(cur.l));
-  var KIND={river:"river",sea:"sea / ocean",mountain:"mountain range",desert:"desert"}, kc=cur.c.k;
+  var KIND={river:"river",sea:"sea / gulf",ocean:"ocean",mountain:"mountain range",desert:"desert"}, kc=cur.c.k;
   var lab=bits.length?'<span class="of">'+esc(bits.join(" \u00b7 "))+'</span>':"";
   if(kc) lab+='<span class="of">'+KIND[kc]+'</span>';     /* what kind of thing is highlighted, styled like "capital of ..." */
   countEl.innerHTML=counterHtml(lab);
@@ -652,7 +653,7 @@ optsEl.addEventListener("click",function(e){
 
 /* settings sheet: pick exactly which items are asked, plus the more niche options */
 var sheet=el("sheet"), sheetBody=el("sheetBody"), sheetChanged=false;
-var TOPIC_TITLES=[["countries","Countries",null],["rivers","Rivers","river"],["seas","Seas & oceans","sea"],["mountains","Mountains","mountain"],["deserts","Deserts","desert"]];
+var TOPIC_TITLES=[["countries","Countries",null],["rivers","Rivers","river"],["seas","Seas & gulfs","sea"],["oceans","Oceans","ocean"],["mountains","Mountains","mountain"],["deserts","Deserts","desert"]];
 function itemsOf(topic){
   var kind=TOPICS[topic];
   var arr=kind?PHYS.filter(function(f){return f.k===kind}):D.c.slice();
