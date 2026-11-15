@@ -213,3 +213,7 @@ details.sec summary::-webkit-details-marker{display:none}
 #cam path.ph.got{stroke:var(--main);fill:var(--main)}
 #cam path.ph.miss{stroke:var(--err);fill:var(--err)}
 #cam path.ph.river.got,#cam path.ph.river.miss{fill:none;stroke-width:2.6;stroke-linecap:round}
+
+/* choosing countries on the map */
+#cam path.off{opacity:.18}
+svg.picking{cursor:pointer}

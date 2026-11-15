@@ -39,11 +39,12 @@ var LANGS=[["en","English"],["fi","Suomi"],["sv","Svenska"],["da","Dansk"],["nb"
 ["hu","Magyar"],["ro","Română"],["et","Eesti"],["lv","Latviešu"],["lt","Lietuvių"],["tr","Türkçe"],["id","Bahasa Indonesia"],
 ["ru","Русский"],["uk","Українська"],["bg","Български"],["sr","Српски"],["el","Ελληνικά"]];
 var S={
-  mode:load("mode","practice",["practice","test","fill","copy","recall","hint"]),
+  mode:load("mode","practice",["practice","test","fill","choose","copy","recall","hint"]),
   region:load("region","world",Object.keys(D.regions)),
   ask:load("ask","country",["country","capital","both"]),
   lang:load("lang","en",LANGS.map(function(l){return l[0]}).concat("both")),
   lang2:load("lang2","",LANGS.map(function(l){return l[0]}).concat("")),   /* second language, when two languages is on */
+  prev:load("prev","practice",["practice","test","fill"]),   /* the mode that "choose" hands over to when you start typing */
   multi:load("multi","off",["off","on"]),
   topics:(function(){
     try{var v=(localStorage.getItem("tm-topics")||"").split(",").filter(function(t){return t in TOPICS});if(v.length) return v}catch(e){}
@@ -347,7 +348,9 @@ function clearMarks(){
   PHYS.forEach(function(f){f.el.classList.remove("got","miss")});
 }
 function startRegion(){
+  if(picking){picking=false; svg.classList.remove("picking"); paths.forEach(function(p){p.classList.remove("off")})}
   applyRegionDim(); clearMarks(); fill=null; clearTimeout(fillTimer); hintBtn.textContent="hint";
+  if(S.mode==="choose"){ if(hasTopic("countries")){enterPick();return} S.mode=S.prev; }
   var list=[];
   if(hasTopic("countries")) list=D.regions[S.region].map(function(i){return D.c[i]});
   var kinds=S.topics.map(function(t){return TOPICS[t]}).filter(Boolean);
@@ -355,6 +358,42 @@ function startRegion(){
   if(!list.length){ nothingSelected(); return; }
   if(S.mode==="fill"){ startFill(list); return; }
   start(makeTasks(list));
+}
+
+/* Choose countries on the map: click a country to switch it on or off. */
+var picking=false;
+function regionCountries(){return D.regions[S.region].map(function(i){return D.c[i]})}
+function paintPick(){
+  paths.forEach(function(p,i){p.classList.toggle("off",OFF.has(idOf(D.c[i])))});
+  var rc=regionCountries(), n=rc.filter(included).length, e=el("pickN");
+  if(e) e.textContent=n+" of "+rc.length+" switched on";
+  syncButtons();
+}
+function savePick(){save("off",JSON.stringify(Array.from(OFF))); paintPick()}
+function enterPick(){
+  picking=true; fill=null; clearTimeout(fillTimer); cur=null; finished=false; buf=""; inp.value="";
+  highlight(null); clearMarks(); applyRegionDim(); fillView(regionCountries());
+  svg.classList.add("picking"); typing.hidden=false; keysEl.hidden=true; hintBtn.hidden=true;
+  lineEl.innerHTML='<span class="caret"></span>';
+  countEl.innerHTML='choose<span class="of" id="pickN"></span>';
+  capEl.className="cap"; capEl.textContent="click countries on the map to switch them on or off \u00b7 start typing to begin";
+  resEl.innerHTML='<div class="acts"><button type="button" id="pAll">all</button><button type="button" id="pNone">none</button></div>';
+  resEl.hidden=false;
+  el("pAll").onclick=function(){regionCountries().forEach(function(c){OFF.delete(idOf(c))});savePick()};
+  el("pNone").onclick=function(){regionCountries().forEach(function(c){OFF.add(idOf(c))});savePick()};
+  paintPick();
+}
+/* the first key typed in choose mode: carry on in the mode you were in, with the chosen countries */
+function startFromPick(){
+  var v=inp.value; S.mode=S.prev; save("mode",S.mode); syncButtons(); startRegion();
+  inp.value=v; inp.dispatchEvent(new Event("input"));
+}
+function goChoose(){S.prev=(S.mode==="choose"?S.prev:S.mode); S.mode="choose"; save("mode","choose"); syncButtons(); startRegion()}
+function pickTap(x,y){
+  var t=document.elementFromPoint(x,y), i=paths.indexOf(t);
+  if(i<0||t.classList.contains("out")) return;
+  var id=idOf(D.c[i]); if(OFF.has(id)) OFF.delete(id); else OFF.add(id);
+  savePick();
 }
 
 /* Fill the map: no questions. Type any name, in any order; what you hit is coloured in. */
@@ -450,6 +489,7 @@ function finishFill(gaveUp){
   h+='<div class="acts"><button type="button" id="again">go again</button></div>';
   resEl.innerHTML=h; resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
   el("again").onclick=startRegion;
+  var pm=el("pickMore"); if(pm) pm.onclick=goChoose;
 }
 /* accuracy counts guesses, not typos: one per question, decided once */
 function score(ok){if(scored) return; scored=true; total++; if(ok) good++}
@@ -474,13 +514,15 @@ function finish(){
       return "<span>"+esc(t.t)+(t.k==="p"?" ("+esc(nameOf(t.c,t.l))+")":"")+"</span>"}).join("")+"</div>";
   }
   h+='<div class="acts">'+(list.length?'<button type="button" id="retry">practise missed</button>':"")+
-     '<button type="button" id="again">go again</button></div>';
+     '<button type="button" id="again">go again</button>'+(hasTopic("countries")?'<button type="button" id="pickMore">choose countries</button>':"")+'</div>';
   resEl.innerHTML=h; resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
   var r=el("retry"); if(r) r.onclick=function(){start(list.map(function(t){return {c:t.c,k:t.k,l:t.l}}))};
   el("again").onclick=startRegion;
+  var pm=el("pickMore"); if(pm) pm.onclick=goChoose;
 }
 
 inp.addEventListener("input",function(){
+  if(picking){startFromPick();return}
   if(fill){fillInput();return}
   if(!cur||finished){inp.value="";return}
   var v=inp.value.replace(/[\r\n]/g,"");
@@ -531,8 +573,6 @@ function syncButtons(){
   document.querySelectorAll("[data-topic]").forEach(function(b){b.setAttribute("aria-pressed",String(hasTopic(b.dataset.topic)))});
   el("regionGrp").hidden=!geo; el("askGrp").hidden=!geo;
   el("langCur").textContent=langsNow().map(langLabel).join(" & ");
-  var inReg=D.regions[S.region].map(function(i){return D.c[i]}), onN=inReg.filter(included).length;
-  el("pickCnt").textContent=onN<inReg.length?"("+onN+"/"+inReg.length+")":"";
   document.querySelectorAll("[data-k]").forEach(function(b){
     b.setAttribute("aria-pressed",String(S[b.dataset.k]===b.dataset.v));
   });
@@ -547,6 +587,7 @@ el("opts").addEventListener("click",function(e){
   }
   var b=e.target.closest("[data-k]"); if(!b) return;
   var k=b.dataset.k; S[k]=b.dataset.v; save(k,S[k]);
+  if(k==="mode"&&S.mode!=="choose"){S.prev=S.mode; save("prev",S.prev)}
   syncButtons();
   startRegion();
 });
@@ -656,7 +697,6 @@ function closeSheet(){
   focusInput();
 }
 el("settingsBtn").addEventListener("click",function(e){e.stopPropagation();openSheet()});
-el("pickBtn").addEventListener("click",function(e){e.stopPropagation();openSheet("countries")});
 el("sheetClose").addEventListener("click",closeSheet);
 sheet.addEventListener("click",function(e){if(e.target===sheet) closeSheet()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!sheet.hidden){e.preventDefault();closeSheet()}});
@@ -701,7 +741,7 @@ sheetBody.addEventListener("input",function(e){
 /* manual zoom and pan: mouse wheel, drag, pinch, and the + / - / reset buttons.
    The next question puts the camera back on its own. */
 (function(){
-  var pts={}, last=null;
+  var pts={}, last=null, tap=null;
   function toView(clientX,clientY){
     var m=svg.getScreenCTM(); if(!m) return {x:W/2,y:H/2};
     var p=svg.createSVGPoint(); p.x=clientX; p.y=clientY; p=p.matrixTransform(m.inverse());
@@ -728,10 +768,12 @@ sheetBody.addEventListener("input",function(e){
     if(!Object.keys(pts).length) kbWas=document.activeElement===inp;
     e.preventDefault();                                     /* do not steal focus from the typing field */
     try{svg.setPointerCapture(e.pointerId)}catch(err){}
+    tap=Object.keys(pts).length?null:{x:e.clientX,y:e.clientY};
     pts[e.pointerId]={x:e.clientX,y:e.clientY}; last=null; svg.classList.add("grab");
   });
   svg.addEventListener("pointermove",function(e){
     if(!pts[e.pointerId]) return;
+    if(tap&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)>6) tap=null;
     var ids=Object.keys(pts), prev=pts[e.pointerId];
     if(ids.length===1){
       var a=toView(prev.x,prev.y), b=toView(e.clientX,e.clientY); panBy(b.x-a.x,b.y-a.y);
@@ -744,7 +786,9 @@ sheetBody.addEventListener("input",function(e){
     }
     pts[e.pointerId]={x:e.clientX,y:e.clientY};
   });
-  function up(e){delete pts[e.pointerId]; if(!Object.keys(pts).length){svg.classList.remove("grab"); keepKeyboard()}}
+  function up(e){
+    if(picking&&tap&&e.type==="pointerup") pickTap(e.clientX,e.clientY);
+    tap=null; delete pts[e.pointerId]; if(!Object.keys(pts).length){svg.classList.remove("grab"); keepKeyboard()}}
   svg.addEventListener("pointerup",up); svg.addEventListener("pointercancel",up);
   svg.addEventListener("mousedown",function(e){e.preventDefault()});
   document.querySelector(".mapctl").addEventListener("mousedown",function(e){kbWas=document.activeElement===inp;e.preventDefault()});
