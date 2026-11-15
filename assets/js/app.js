@@ -383,10 +383,10 @@ function enterPick(){
   el("pNone").onclick=function(){regionCountries().forEach(function(c){OFF.add(idOf(c))});savePick()};
   paintPick();
 }
-/* the first key typed in choose mode: carry on in the mode you were in, with the chosen countries */
+/* the first key typed in choose mode: carry on in the mode you were in, with the chosen countries; the key itself is dropped */
 function startFromPick(){
-  var v=inp.value; S.mode=S.prev; save("mode",S.mode); syncButtons(); startRegion();
-  inp.value=v; inp.dispatchEvent(new Event("input"));
+  S.mode=S.prev; save("mode",S.mode); syncButtons(); startRegion();
+  inp.value="";   /* that first key only starts the round; you had not seen the question yet, so it does not count */
 }
 function goChoose(){S.prev=(S.mode==="choose"?S.prev:S.mode); S.mode="choose"; save("mode","choose"); syncButtons(); startRegion()}
 function pickTap(x,y){
