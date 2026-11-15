@@ -132,7 +132,7 @@ kbd{font:inherit;font-size:.75rem;background:var(--panel);color:var(--text);padd
 #cam path.ph{display:none;fill:none;stroke:none}
 #cam path.ph.on{display:inline;stroke:var(--main);stroke-width:1.2;fill-opacity:.5;fill:var(--main)}
 #cam path.ph.river.on{fill:none;stroke-width:2.6;stroke-linecap:round}
-#cam path.ph.sea.on{fill-opacity:.32}
+#cam path.ph.sea.on,#cam path.ph.ocean.on{fill-opacity:.32}
 #cam path.ph.mountain.on,#cam path.ph.desert.on{fill-opacity:.6}
 .grp[hidden]+.sep{display:none}
 #optsBtn{display:none}

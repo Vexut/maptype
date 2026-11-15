@@ -10,7 +10,7 @@ maptype shows a place on the map and you type its name. It is a small static web
 
 ## Features
 
-- **Five topics, in any combination:** countries (with capitals), rivers, seas and oceans, mountain ranges, and deserts.
+- **Six topics, in any combination:** countries (with capitals), rivers, seas and gulfs, oceans, mountain ranges, and deserts.
 - **Many languages:** country names and capitals follow the language you pick, with a searchable language menu. Where a translation is not available the English name is used, and English is always accepted as an answer.
 - **Two modes:** *practice* (the faint answer appears once you type the first letter; wrong letters turn red) and *test* (type from memory, press Enter once for a hint and again to give up).
 - **Stopwatch:** an optional running clock with your total time and personal best for each setup.
