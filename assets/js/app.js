@@ -364,6 +364,10 @@ function startRegion(){
 
 /* Choose countries on the map: click a country to switch it on or off. */
 var picking=false;
+function clearCountryPicks(){
+  Array.from(OFF).forEach(function(id){if(id.indexOf("c:")===0) OFF.delete(id)});
+  save("off",JSON.stringify(Array.from(OFF)));
+}
 function regionCountries(){return D.regions[S.region].map(function(i){return D.c[i]})}
 function paintPick(){
   paths.forEach(function(p,i){p.classList.toggle("off",OFF.has(idOf(D.c[i])))});
@@ -590,6 +594,8 @@ el("opts").addEventListener("click",function(e){
   var b=e.target.closest("[data-k]"); if(!b) return;
   var k=b.dataset.k; S[k]=b.dataset.v; save(k,S[k]);
   if(k==="mode"&&S.mode!=="choose"){S.prev=S.mode; save("prev",S.prev)}
+  /* a choice made in choose mode only lasts until you change the mode or the region */
+  if((k==="mode"&&S.mode!=="choose")||k==="region") clearCountryPicks();
   syncButtons();
   startRegion();
 });
