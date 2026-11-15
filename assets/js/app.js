@@ -247,7 +247,9 @@ function zoomTo(c){
 function hasTopic(t){return S.topics.indexOf(t)>=0}
 function applyRegionDim(){
   var set=new Set(D.regions[S.region]), dim=hasTopic("countries")&&S.region!=="world";
-  paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i))});
+  /* countries you switched off stay faded in every mode, so the choice is always visible */
+  var geo=hasTopic("countries");
+  paths.forEach(function(p,i){p.classList.toggle("out",dim&&!set.has(i)); p.classList.toggle("off",geo&&OFF.has(idOf(D.c[i])))});
 }
 function highlight(c){
   paths.forEach(function(p){p.classList.remove("on")});
@@ -348,7 +350,7 @@ function clearMarks(){
   PHYS.forEach(function(f){f.el.classList.remove("got","miss")});
 }
 function startRegion(){
-  if(picking){picking=false; svg.classList.remove("picking"); paths.forEach(function(p){p.classList.remove("off")})}
+  if(picking){picking=false; svg.classList.remove("picking")}
   applyRegionDim(); clearMarks(); fill=null; clearTimeout(fillTimer); hintBtn.textContent="hint";
   if(S.mode==="choose"){ if(hasTopic("countries")){enterPick();return} S.mode=S.prev; }
   var list=[];
