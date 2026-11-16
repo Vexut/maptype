@@ -27,6 +27,9 @@ var TOPICS={countries:null,rivers:"river",seas:"sea",oceans:"ocean",mountains:"m
 var CAPS=window.TYPEMAP_CAPS||{};
 /* items switched off in the settings sheet (countries "c:Name", others "river:Name" ...) */
 var OFF=(function(){try{return new Set(JSON.parse(localStorage.getItem("tm-off")||"[]"))}catch(e){return new Set()}})();
+/* country picks (choose mode) only last for the visit: forget old ones on load, so a stale choice can never leave nothing to ask */
+Array.from(OFF).forEach(function(id){if(id.indexOf("c:")===0) OFF.delete(id)});
+try{localStorage.setItem("tm-off",JSON.stringify(Array.from(OFF)))}catch(e){}
 function idOf(c){return (c.k||"c")+":"+c.f}
 function included(c){return !OFF.has(idOf(c))}
 
@@ -344,9 +347,10 @@ function start(tasks){
 function nothingSelected(){
   cur=null; finished=true; highlight(null); zoomTo(null);
   resEl.innerHTML='<h2>nothing selected</h2><p class="best">Everything in the chosen topics is switched off.</p>'+
-    '<div class="acts"><button type="button" id="openSet2">open settings</button></div>';
+    '<div class="acts"><button type="button" id="allOn">switch everything on</button><button type="button" id="openSet2">open settings</button></div>';
   resEl.hidden=false; typing.hidden=true; keysEl.hidden=true;
   el("openSet2").onclick=function(){openSheet()};
+  el("allOn").onclick=function(){OFF.clear(); save("off","[]"); startRegion(); focusInput()};
 }
 function clearMarks(){
   paths.forEach(function(p){p.classList.remove("got","miss")});
